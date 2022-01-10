@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 /*
  * Project      : Python Indent/Dedent handler for ANTLR4 grammars
- *                
+ *                https://github.com/antlr/grammars-v4/tree/master/python/python_by_peg/src
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
 
@@ -97,29 +97,26 @@ public abstract class PythonLexerBase extends Lexer {
     private void handleStartOfInput() {   // related parser grammar rule:    file: statements? EOF;
         if (_indentLengths.size() == 0) { // We're at the first default or hidden channel token
             _indentLengths.push(0);  // initialize the stack with a default 0 indentation length (this will never be popped off)
-            boolean isPrevTokenWhiteSpace = false;
             while (_curToken.getType() != EOF) {
-                switch (_curToken.getType()) {
-                    case PythonLexer.WS -> { // invisible token, contains space or tab
-                        addPendingToken(_curToken);
-                        isPrevTokenWhiteSpace = true;
-                    }
-                    case PythonLexer.NEWLINE -> { // invisible token, may contain whitespace (space or tab)
-                        hideAndAddPendingToken(); // hide the current NEWLINE token
-                        isPrevTokenWhiteSpace = getIndentationLength(_curToken.getText()) > 0;
-                    }
-                    default -> { // visible (not WS or NEWLINE) token
-                        if (_curToken.getChannel() == Lexer.DEFAULT_TOKEN_CHANNEL) {
-                            // isPrevTokenWhiteSpace was set in the previous iteration
-                            if (isPrevTokenWhiteSpace) { // there is a whitespace before the first visible token which from the default channel
-                                // insert an INDENT token before the current token to raise an 'unexpected indent' error later by the parser
-                                createAndAddPendingToken(PythonLexer.INDENT);
+                if (_curToken.getChannel() == Lexer.DEFAULT_TOKEN_CHANNEL) {
+                    if (_curToken.getType() == PythonLexer.NEWLINE) {
+                        hideAndAddPendingToken(); // hide the NEWLINE token before the first normal token
+                    } else { // first normal token
+                        if ( !_pendingTokens.isEmpty()) { // there is a token before the first normal token
+                            Token prevToken = _pendingTokens.peekLast();
+                            if (switch (prevToken.getType()) {
+                                case PythonLexer.WS -> true; // there is a whitespace token (space or tab) before the first normal token
+                                case PythonLexer.NEWLINE -> getIndentationLength(prevToken.getText()) > 0; // make sure the NEWLINE token contains whitespace (space or tab)
+                                default -> false;
+                            }) {
+                                // insert an INDENT token before the first normal token to raise an 'unexpected indent' error later by the parser
+                                createAndAddPendingToken(_curToken.getStartIndex(), _curToken.getStartIndex() - 1, "<" + getVocabulary().getDisplayName(PythonLexer.INDENT) + ">", PythonLexer.INDENT, Lexer.DEFAULT_TOKEN_CHANNEL, _curToken.getLine(), _curToken.getCharPositionInLine());
                             }
-                            return; //continue the processing of the current token with checkNextToken()
                         }
-                        addPendingToken(_curToken);
-                        isPrevTokenWhiteSpace = false;
+                        return; //continue the processing of the current token with checkNextToken()
                     }
+                } else {
+                    addPendingToken(_curToken);
                 }
                 setCurrentAndFollowingTokens();
             } //continue the processing of the EOF token with checkNextToken()
@@ -204,7 +201,7 @@ public abstract class PythonLexerBase extends Lexer {
 
     private void addPendingToken(Token t) {
         _pendingTokens.addLast(t); // add a token to the token stream
-        _lastPendingTokenType = t.getType(); // store the last token type because the _pendingTokens linked list may be empty later
+        _lastPendingTokenType = t.getType(); // save the last token type because the _pendingTokens linked list may be empty later
     }
 
     // Calculates the indentation of the provided spaces, taking the
