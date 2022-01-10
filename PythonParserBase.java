@@ -21,7 +21,7 @@ THE SOFTWARE.
 
 /*
  * Project      : a helper class to convert PEG grammar to ANTLR4 grammar
- *                https://github.com/antlr/grammars-v4/tree/master/python/python_by_peg/src
+ *                
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
 
