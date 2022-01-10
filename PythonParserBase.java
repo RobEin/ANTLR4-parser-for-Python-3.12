@@ -21,7 +21,7 @@ THE SOFTWARE.
 
 /*
  * Project      : a helper class to convert PEG grammar to ANTLR4 grammar
- *                
+ *                https://github.com/antlr/grammars-v4/tree/master/python/python_by_peg/src
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
 
@@ -43,8 +43,16 @@ public abstract class PythonParserBase extends Parser {
         return getCurrentToken().getText().equals(tokenText);
     }
 
+    protected boolean is_notCurrentToken(String tokenText) { // for other programming language to call this function without Java logical not operator ('!')
+        return !isCurrentToken(tokenText);
+    }
+
     protected boolean isNextToken(List<Integer> tokenTypeAlternatives) {
         return tokenTypeAlternatives.contains(_input.LT(1).getType());
+    }
+
+    protected boolean is_notNextToken(List<Integer> tokenTypeAlternatives) { // for other programming language to call this function without Java logical not operator ('!')
+        return !isNextToken(tokenTypeAlternatives);
     }
 
     protected boolean isNextToken(int... tokenTypeAlternatives) {
@@ -55,6 +63,10 @@ public abstract class PythonParserBase extends Parser {
             }
         }
         return false;
+    }
+
+    protected boolean is_notNextToken(int... tokenTypeAlternatives) { // for other programming language to call this function without Java logical not operator ('!')
+        return !isNextToken(tokenTypeAlternatives);
     }
 
     protected boolean isNextToken(char... tokenCharAlternatives) {
@@ -72,6 +84,10 @@ public abstract class PythonParserBase extends Parser {
         return false;
     }
 
+    protected boolean is_notNextToken(char... tokenCharAlternatives) { // for other programming language to call this function without Java logical not operator ('!')
+        return !isNextToken(tokenCharAlternatives);
+    }
+
     protected boolean isNextToken(String... tokenTextAlternatives) {
         String nextTokenText = _input.LT(1).getText();
         if (nextTokenText != null) {
@@ -82,6 +98,10 @@ public abstract class PythonParserBase extends Parser {
             }
         }
         return false;
+    }
+
+    protected boolean is_notNextToken(String... tokenTextAlternatives) { // for other programming language to call this function without Java logical not operator ('!')
+        return !isNextToken(tokenTextAlternatives);
     }
 
     protected boolean areNextTokens(int... tokenTypeSequence) {
