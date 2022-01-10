@@ -22,12 +22,15 @@ THE SOFTWARE.
 
  /*
  * Project      : an ANTLR4 parser grammar by the official PEG grammar
- *                
+ *                https://github.com/antlr/grammars-v4/tree/master/python/python_by_peg
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
 
 parser grammar PythonParser; // Python 3.10    https://docs.python.org/3.10/reference/grammar.html
 options { tokenVocab=PythonLexer; superClass=PythonParserBase; }
+
+// ANTLR4 grammar for Python
+
 
 // ANTLR4 grammar for Python
 
@@ -56,7 +59,7 @@ statement_newline
     | NEWLINE
     | EOF;
 simple_stmts
-    : simple_stmt {!isNextToken(';')}? NEWLINE  // Not needed, there for speedup
+    : simple_stmt {is_notNextToken(';')}? NEWLINE  // Not needed, there for speedup
     | simple_stmt (';' simple_stmt)* ';'? NEWLINE;
 // NOTE: assignment MUST precede expression, else parsing a simple assignment
 // will throw a SyntaxError.
@@ -89,7 +92,7 @@ assignment
     : NAME ':' expression ('=' annotated_rhs )?
     | ('(' single_target ')'
          | single_subscript_attribute_target) ':' expression ('=' annotated_rhs )?
-    | (star_targets '=' )+ (yield_expr | star_expressions) {!isNextToken('=')}? TYPE_COMMENT?
+    | (star_targets '=' )+ (yield_expr | star_expressions) {is_notNextToken('=')}? TYPE_COMMENT?
     | single_target augassign (yield_expr | star_expressions);
 augassign
     : '+='
@@ -114,7 +117,7 @@ yield_stmt: yield_expr;
 assert_stmt: 'assert' expression (',' expression )?;
 
 del_stmt
-    : 'del' del_targets {isNextToken(';', NEWLINE)}?;
+    : 'del' del_targets {isNextToken(SEMI, NEWLINE)}?;
 import_stmt: import_name | import_from;
 import_name: 'import' dotted_as_names;
 // note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
@@ -123,7 +126,7 @@ import_from
     | 'from' ('.' | '...')+ 'import' import_from_targets;
 import_from_targets
     : '(' import_from_as_names ','? ')'
-    | import_from_as_names {!isNextToken(',')}?
+    | import_from_as_names {is_notNextToken(',')}?
     | '*';
 import_from_as_names
     : import_from_as_name (',' import_from_as_name)*;
@@ -171,7 +174,7 @@ finally_block
     : 'finally' ':' block;
 
 match_stmt
-    : match_skw subject_expr ':' NEWLINE INDENT case_block+ DEDENT; //'match' subject_expr ':' NEWLINE INDENT case_block+ DEDENT;
+    : match_skw subject_expr ':' NEWLINE INDENT case_block+ DEDENT;
 subject_expr
     : star_named_expression ',' star_named_expressions?
     | named_expression;
@@ -201,7 +204,7 @@ closed_pattern
 
 // Literal patterns are used for equality and identity constraints
 literal_pattern
-    : signed_number {!isNextToken('+', '-')}?
+    : signed_number {is_notNextToken('+', '-')}?
     | complex_number
     | strings
     | 'None'
@@ -210,7 +213,7 @@ literal_pattern
 
 // Literal expressions are used to restrict permitted mapping pattern keys
 literal_expr
-    : signed_number {!isNextToken('+', '-')}?
+    : signed_number {is_notNextToken('+', '-')}?
     | complex_number
     | strings
     | 'None'
@@ -239,13 +242,13 @@ capture_pattern
     : pattern_capture_target;
 
 pattern_capture_target
-    : name_except_underscore NAME {!isNextToken('.', '(', '=')}?;
+    : name_except_underscore NAME {is_notNextToken('.', '(', '=')}?;
 
 wildcard_pattern
     : underscore_skw;
 
 value_pattern
-    : attr {!isNextToken('.', '(', '=')}?;
+    : attr {is_notNextToken('.', '(', '=')}?;
 attr
     : name_or_attr '.' NAME;
 name_or_attr
@@ -393,7 +396,7 @@ assignment_expression
 
 named_expression
     : assignment_expression
-    | expression {!isNextToken(":=")}?;
+    | expression {is_notNextToken(":=")}?;
 
 annotated_rhs: yield_expr | star_expressions;
 
@@ -526,7 +529,7 @@ primary
     | atom;
 
 slices
-    : slice {!isNextToken(',')}?
+    : slice {is_notNextToken(',')}?
     | slice (',' slice)* ','?;
 slice
     : expression? ':' expression? (':' expression? )?
@@ -553,7 +556,7 @@ tuple
 group
     : '(' (yield_expr | named_expression) ')';
 genexp
-    : '(' ( assignment_expression | expression {!isNextToken(":=")}?) for_if_clauses ')';
+    : '(' ( assignment_expression | expression {is_notNextToken(":=")}?) for_if_clauses ')';
 set: '{' star_named_expressions '}';
 setcomp
     : '{' named_expression for_if_clauses '}';
@@ -580,7 +583,7 @@ yield_expr
 arguments
     : args ','? {isNextToken(')')}?;
 args
-    : (starred_expression | ( assignment_expression | expression {!isNextToken(":=")}?) {!isNextToken('=')}?) (',' (starred_expression | ( assignment_expression | expression {!isNextToken(":=")}?) {!isNextToken('=')}?))* (',' kwargs )?
+    : (starred_expression | ( assignment_expression | expression {is_notNextToken(":=")}?) {is_notNextToken('=')}?) (',' (starred_expression | ( assignment_expression | expression {is_notNextToken(":=")}?) {is_notNextToken('=')}?))* (',' kwargs )?
     | kwargs;
 
 kwargs
@@ -598,18 +601,18 @@ kwarg_or_double_starred
 
 // NOTE: star_targets may contain *bitwise_or, targets may not.
 star_targets
-    : star_target {!isNextToken(',')}?
+    : star_target {is_notNextToken(',')}?
     | star_target (',' star_target )* ','?;
 star_targets_list_seq: star_target (',' star_target)* ','?;
 star_targets_tuple_seq
     : star_target (',' star_target )+ ','?
     | star_target ',';
 star_target
-    : '*' ({!isNextToken('*')}? star_target)
+    : '*' ({is_notNextToken('*')}? star_target)
     | target_with_star_atom;
 target_with_star_atom
-    : t_primary '.' NAME {!isNextToken(t_lookahead)}?
-    | t_primary '[' slices ']' {!isNextToken(t_lookahead)}?
+    : t_primary '.' NAME {is_notNextToken(t_lookahead)}?
+    | t_primary '[' slices ']' {is_notNextToken(t_lookahead)}?
     | star_atom;
 star_atom
     : NAME
@@ -622,13 +625,13 @@ single_target
     | NAME
     | '(' single_target ')';
 single_subscript_attribute_target
-    : t_primary '.' NAME {!isNextToken(t_lookahead)}?
-    | t_primary '[' slices ']' {!isNextToken(t_lookahead)}?;
+    : t_primary '.' NAME {is_notNextToken(t_lookahead)}?
+    | t_primary '[' slices ']' {is_notNextToken(t_lookahead)}?;
 
 del_targets: del_target (',' del_target)* ','?;
 del_target
-    : t_primary '.' NAME {!isNextToken(t_lookahead)}?
-    | t_primary '[' slices ']' {!isNextToken(t_lookahead)}?
+    : t_primary '.' NAME {is_notNextToken(t_lookahead)}?
+    | t_primary '[' slices ']' {is_notNextToken(t_lookahead)}?
     | del_t_atom;
 del_t_atom
     : NAME
@@ -646,6 +649,6 @@ t_primary
 
 // *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
 match_skw              : {isCurrentToken("match")}? NAME;
-case_skw               : {isCurrentToken("case")}? NAME;
+case_skw              : {isCurrentToken("case")}? NAME;
 underscore_skw         : {isCurrentToken("_")}? NAME;
-name_except_underscore : { !isCurrentToken("_")}? NAME;
+name_except_underscore : {is_notCurrentToken("_")}? NAME;
