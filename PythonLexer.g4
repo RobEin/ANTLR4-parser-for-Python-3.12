@@ -22,7 +22,7 @@ THE SOFTWARE.
 
  /*
  * Project      : an ANTLR4 lexer grammar for Python 3
- *                https://github.com/antlr/grammars-v4/tree/master/python/python_by_peg
+ *                
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
 
