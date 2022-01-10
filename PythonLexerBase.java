@@ -54,8 +54,8 @@ public abstract class PythonLexerBase extends Lexer {
     // Was there tab char in the indentations?
     private boolean _wasTabIndentation = false;
 
-    Token _curToken; // current (under processing) token
-    Token _ffgToken; // following token
+    private Token _curToken; // current (under processing) token
+    private Token _ffgToken; // following token
 
     @Override
     public Token nextToken() { // process the input stream until the first returning EOF
