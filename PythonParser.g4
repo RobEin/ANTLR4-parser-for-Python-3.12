@@ -32,9 +32,6 @@ options { tokenVocab=PythonLexer; superClass=PythonParserBase; }
 // ANTLR4 grammar for Python
 
 
-// ANTLR4 grammar for Python
-
-
 file: statements? EOF;
 interactive: statement_newline;
 eval: expressions NEWLINE* EOF;
