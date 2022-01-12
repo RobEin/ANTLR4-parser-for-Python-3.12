@@ -1,2 +1,2 @@
 # ANTLR4-Python-grammar-by-PEG
-An ANTLR4 Python grammar by the official PEG grammar
+ANTLR4 Python 3.10 grammar by the official PEG grammar
