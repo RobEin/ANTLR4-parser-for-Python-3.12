@@ -22,7 +22,7 @@ THE SOFTWARE.
 
  /*
  * Project      : an ANTLR4 lexer grammar for Python 3
- *                
+ *                https://github.com/antlr/grammars-v4/tree/master/python/python_by_peg
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
 
@@ -146,7 +146,6 @@ WS           : WHITE_SPACES                      -> channel(HIDDEN);
 COMMENT      : '#' ~[\r\n\f]*                    -> channel(HIDDEN);
 LINE_JOINING : '\\' WHITE_SPACES? OS_INDEPEND_NL -> channel(HIDDEN);
 
-
 /*
  * fragments
  */
@@ -218,7 +217,7 @@ fragment EXPONENT       : ('e' | 'E') ('+' | '-')? DIGIT_PART;
 fragment IMAG_NUMBER : (FLOAT_NUMBER | DIGIT_PART) ('j' | 'J');
 
 fragment WHITE_SPACES   : [ \t]+;
-fragment OS_INDEPEND_NL : '\r'? '\n';     // *** Unix and Windows
+fragment OS_INDEPEND_NL : '\r'? '\n';
 
 fragment ID_CONTINUE // based on: https://github.com/asmeurer/python-unicode-variable-names
  : ID_START
