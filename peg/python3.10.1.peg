@@ -1,23 +1,4 @@
-
-
-
-
 # https://docs.python.org/3.10/reference/grammar.html
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # This is the full Python grammar, derived directly from the grammar used to generate the CPython parser (see 
