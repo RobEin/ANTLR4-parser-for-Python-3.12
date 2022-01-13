@@ -28,7 +28,6 @@ THE SOFTWARE.
 
 parser grammar PythonParser; // Python 3.10    https://docs.python.org/3.10/reference/grammar.html
 options { tokenVocab=PythonLexer; superClass=PythonParserBase; }
-
 // ANTLR4 grammar for Python
 
 
