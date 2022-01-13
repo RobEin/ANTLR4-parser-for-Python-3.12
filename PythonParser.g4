@@ -90,6 +90,7 @@ assignment
          | single_subscript_attribute_target) ':' expression ('=' annotated_rhs )?
     | (star_targets '=' )+ (yield_expr | star_expressions) {is_notNextToken('=')}? TYPE_COMMENT?
     | single_target augassign (yield_expr | star_expressions);
+
 augassign
     : '+='
     | '-='
@@ -114,6 +115,7 @@ assert_stmt: 'assert' expression (',' expression )?;
 
 del_stmt
     : 'del' del_targets {isNextToken(SEMI, NEWLINE)}?;
+
 import_stmt: import_name | import_from;
 import_name: 'import' dotted_as_names;
 // note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
@@ -151,11 +153,13 @@ while_stmt
 for_stmt
     : 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?
     | ASYNC 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?;
+
 with_stmt
     : 'with' '(' with_item (',' with_item)* ','? ')' ':' block
     | 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block
     | ASYNC 'with' '(' with_item (',' with_item)* ','? ')' ':' block
     | ASYNC 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block;
+
 with_item
     : expression 'as' star_target {isNextToken(',', ')', ':')}?
     | expression;
@@ -334,6 +338,7 @@ star_etc
     : '*' param_no_default param_maybe_default* kwds?
     | '*' ',' param_maybe_default+ kwds?
     | kwds;
+
 kwds: '**' param_no_default;
 
 // One parameter.  This *includes* a following comma and type comment.
@@ -373,6 +378,7 @@ class_def_raw
 block
     : NEWLINE INDENT statements DEDENT
     | simple_stmts;
+
 star_expressions
     : star_expression (',' star_expression )+ ','?
     | star_expression ','
@@ -433,6 +439,7 @@ lambda_star_etc
     : '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
     | '*' ',' lambda_param_maybe_default+ lambda_kwds?
     | lambda_kwds;
+
 lambda_kwds: '**' lambda_param_no_default;
 
 lambda_param_no_default
@@ -559,7 +566,6 @@ setcomp
 dict
     : '{' double_starred_kvpairs? '}';
 
-
 dictcomp
     : '{' kvpair for_if_clauses '}';
 double_starred_kvpairs: double_starred_kvpair (',' double_starred_kvpair)* ','?;
@@ -572,6 +578,7 @@ for_if_clauses
 for_if_clause
     : ASYNC 'for' star_targets 'in' disjunction ('if' disjunction )*
     | 'for' star_targets 'in' disjunction ('if' disjunction )*;
+
 yield_expr
     : 'yield' 'from' expression
     | 'yield' star_expressions?;
