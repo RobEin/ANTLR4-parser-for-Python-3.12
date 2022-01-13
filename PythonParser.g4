@@ -652,6 +652,6 @@ t_primary
 
 // *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
 match_skw              : {isCurrentToken("match")}? NAME;
-case_skw              : {isCurrentToken("case")}? NAME;
+case_skw               : {isCurrentToken("case")}? NAME;
 underscore_skw         : {isCurrentToken("_")}? NAME;
 name_except_underscore : {is_notCurrentToken("_")}? NAME;
