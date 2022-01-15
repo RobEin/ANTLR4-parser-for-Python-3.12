@@ -11,7 +11,7 @@ grun Python file -tokens test.py
 ```
 
 
-### Related links
+#### Related links
 [ANTLR 4](https://www.antlr.org/)
 
 [ANTLR 4 Documentation](https://github.com/antlr/antlr4/tree/master/doc)
