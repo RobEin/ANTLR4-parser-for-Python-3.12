@@ -26,7 +26,7 @@ THE SOFTWARE.
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
 
-parser grammar PythonParser; // Python 3.10.1    https://docs.python.org/3.10/reference/grammar.html
+parser grammar PythonParser; // Python 3.10.2    https://docs.python.org/3.10/reference/grammar.html
 options { tokenVocab=PythonLexer; superClass=PythonParserBase; }
 // ANTLR4 grammar for Python
 
@@ -650,8 +650,8 @@ t_primary
     | atom {isNextToken(t_lookahead)}?;
 
 
+// *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
 match_skw              : {isCurrentToken("match")}? NAME;
 case_skw               : {isCurrentToken("case")}? NAME;
 underscore_skw         : {isCurrentToken("_")}? NAME;
 name_except_underscore : {is_notCurrentToken("_")}? NAME;
-
