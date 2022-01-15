@@ -46,7 +46,7 @@ public abstract class PythonParserBase extends Parser {
         return getCurrentToken().getText().equals(tokenText);
     }
 
-    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
     protected boolean is_notCurrentToken(String tokenText) {
         return !isCurrentToken(tokenText);
     }
@@ -56,7 +56,7 @@ public abstract class PythonParserBase extends Parser {
         return tokenTypeAlternatives.contains(_input.LT(1).getType());
     }
 
-    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
     protected boolean is_notNextToken(List<Integer> tokenTypeAlternatives) {
         return !isNextToken(tokenTypeAlternatives);
     }
@@ -71,7 +71,7 @@ public abstract class PythonParserBase extends Parser {
         return false;
     }
 
-    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
     protected boolean is_notNextToken(int... tokenTypeAlternatives) {
         return !isNextToken(tokenTypeAlternatives);
     }
@@ -91,7 +91,7 @@ public abstract class PythonParserBase extends Parser {
         return false;
     }
 
-    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
     protected boolean is_notNextToken(char... tokenCharAlternatives) {
         return !isNextToken(tokenCharAlternatives);
     }
@@ -108,7 +108,7 @@ public abstract class PythonParserBase extends Parser {
         return false;
     }
 
-    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
     protected boolean is_notNextToken(String... tokenTextAlternatives) {
         return !isNextToken(tokenTextAlternatives);
     }
