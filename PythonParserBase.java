@@ -21,10 +21,13 @@ THE SOFTWARE.
 
 /*
  * Project      : a helper class to convert PEG grammar to ANTLR4 grammar
- *                
+ *
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
 
+// https://www.python.org/dev/peps/pep-0617/#id7
+
+import java.util.Arrays;
 import java.util.List;
 
 import org.antlr.v4.runtime.Parser;
@@ -43,15 +46,18 @@ public abstract class PythonParserBase extends Parser {
         return getCurrentToken().getText().equals(tokenText);
     }
 
-    protected boolean is_notCurrentToken(String tokenText) { // for other programming language to call this function without Java logical not operator ('!')
+    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    protected boolean is_notCurrentToken(String tokenText) {
         return !isCurrentToken(tokenText);
     }
 
     protected boolean isNextToken(List<Integer> tokenTypeAlternatives) {
+
         return tokenTypeAlternatives.contains(_input.LT(1).getType());
     }
 
-    protected boolean is_notNextToken(List<Integer> tokenTypeAlternatives) { // for other programming language to call this function without Java logical not operator ('!')
+    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    protected boolean is_notNextToken(List<Integer> tokenTypeAlternatives) {
         return !isNextToken(tokenTypeAlternatives);
     }
 
@@ -65,7 +71,8 @@ public abstract class PythonParserBase extends Parser {
         return false;
     }
 
-    protected boolean is_notNextToken(int... tokenTypeAlternatives) { // for other programming language to call this function without Java logical not operator ('!')
+    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    protected boolean is_notNextToken(int... tokenTypeAlternatives) {
         return !isNextToken(tokenTypeAlternatives);
     }
 
@@ -84,7 +91,8 @@ public abstract class PythonParserBase extends Parser {
         return false;
     }
 
-    protected boolean is_notNextToken(char... tokenCharAlternatives) { // for other programming language to call this function without Java logical not operator ('!')
+    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    protected boolean is_notNextToken(char... tokenCharAlternatives) {
         return !isNextToken(tokenCharAlternatives);
     }
 
@@ -100,7 +108,8 @@ public abstract class PythonParserBase extends Parser {
         return false;
     }
 
-    protected boolean is_notNextToken(String... tokenTextAlternatives) { // for other programming language to call this function without Java logical not operator ('!')
+    // function name for other programming language to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
+    protected boolean is_notNextToken(String... tokenTextAlternatives) {
         return !isNextToken(tokenTextAlternatives);
     }
 
