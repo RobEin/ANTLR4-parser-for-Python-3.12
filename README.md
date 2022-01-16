@@ -6,7 +6,7 @@ PythonLexerBase.java handles the Python indentations.
 This class also can be used with older ANTLR4 grammars for Python 3.xx.
 See the instructions in the comments.
 
-PythonParserBase.java is a helper class to implement PEG grammar specific expressions in an ANTLR4 grammar with semantic predicates.
+PythonParserBase.java is a helper class to implement [PEG grammar specific expressions](https://www.python.org/dev/peps/pep-0617/) in an ANTLR4 grammar with [semantic predicates](https://github.com/antlr/antlr4/blob/master/doc/predicates.md).
 
 
 #### A simple usage example in command line:
