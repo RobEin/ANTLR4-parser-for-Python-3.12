@@ -2,7 +2,7 @@
 
 An ANTLR4 parser for Python 3.10.2 based on the official [PEG grammar](https://docs.python.org/3.10/reference/grammar.html).
 
-#### A simple command line usage example:
+#### A simple usage example in command line:
 ```bash
 antlr4 PythonLexer.g4
 antlr4 PythonParser.g4
