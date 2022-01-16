@@ -2,7 +2,7 @@
 
 ### Files:
  - PythonParser.g4
-   an ANTLR4 grammar based on the official [PEG grammar](https://docs.python.org/3.10/reference/grammar.html).
+   is an ANTLR4 grammar based on the official [PEG grammar](https://docs.python.org/3.10/reference/grammar.html).
 
  - PythonLexerBase.java
    handles the Python indentations.
@@ -10,7 +10,7 @@
    See the instructions in the comments.
 
  - PythonParserBase.java
-   a helper class to implement [PEG grammar specific expressions](https://www.python.org/dev/peps/pep-0617/) in an ANTLR4 grammar 
+   is a helper class to implement [PEG grammar specific expressions](https://www.python.org/dev/peps/pep-0617/) in an ANTLR4 grammar 
    with [semantic predicates](https://github.com/antlr/antlr4/blob/master/doc/predicates.md).
 
 
