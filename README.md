@@ -2,7 +2,7 @@
 
 ### Files:
  - PythonParser.g4
-   is an ANTLR4 grammar file based on the official [PEG grammar](https://docs.python.org/3.10/reference/grammar.html).
+   is the ANTLR4 parser grammar file that based on the official Python [PEG grammar](https://docs.python.org/3.10/reference/grammar.html).
 
  - PythonLexerBase.java
    handles the Python indentations.
