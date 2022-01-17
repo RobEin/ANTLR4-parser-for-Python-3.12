@@ -10,7 +10,7 @@
    See the instructions in the comments.
 
  - PythonParserBase.java
-   is a helper class to implement [PEG grammar specific expressions](https://www.python.org/dev/peps/pep-0617/) in an ANTLR4 grammar 
+   is a helper class to implement [PEG grammar specific expressions](https://www.python.org/dev/peps/pep-0617/#grammar-expressions) in an ANTLR4 grammar 
    with [semantic predicates](https://github.com/antlr/antlr4/blob/master/doc/predicates.md).
 
 
