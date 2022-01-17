@@ -6,7 +6,7 @@
 
  - PythonLexerBase.java
    handles the Python indentations.
-   This class also can be used with older ANTLR4 grammars for Python 3.xx.
+   This class also can be used with older ANTLR4 Python grammars.
    See the instructions in the comments.
 
  - PythonParserBase.java
