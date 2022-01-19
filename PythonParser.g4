@@ -55,7 +55,7 @@ statement_newline
     | NEWLINE
     | EOF;
 simple_stmts
-    : simple_stmt {is_notNextToken(';')}? NEWLINE  // Not needed, there for speedup
+    : simple_stmt {isnot_(SEMI)}? NEWLINE  // Not needed, there for speedup
     | simple_stmt (';' simple_stmt)* ';'? NEWLINE;
 // NOTE: assignment MUST precede expression, else parsing a simple assignment
 // will throw a SyntaxError.
@@ -88,7 +88,7 @@ assignment
     : NAME ':' expression ('=' annotated_rhs )?
     | ('(' single_target ')'
          | single_subscript_attribute_target) ':' expression ('=' annotated_rhs )?
-    | (star_targets '=' )+ (yield_expr | star_expressions) {is_notNextToken('=')}? TYPE_COMMENT?
+    | (star_targets '=' )+ (yield_expr | star_expressions) {isnot_(EQUAL)}? TYPE_COMMENT?
     | single_target augassign (yield_expr | star_expressions);
 
 augassign
@@ -114,7 +114,7 @@ yield_stmt: yield_expr;
 assert_stmt: 'assert' expression (',' expression )?;
 
 del_stmt
-    : 'del' del_targets {isNextToken(SEMI, NEWLINE)}?;
+    : 'del' del_targets {is_(SEMI, NEWLINE)}?;
 
 import_stmt: import_name | import_from;
 import_name: 'import' dotted_as_names;
@@ -124,7 +124,7 @@ import_from
     | 'from' ('.' | '...')+ 'import' import_from_targets;
 import_from_targets
     : '(' import_from_as_names ','? ')'
-    | import_from_as_names {is_notNextToken(',')}?
+    | import_from_as_names {isnot_(COMMA)}?
     | '*';
 import_from_as_names
     : import_from_as_name (',' import_from_as_name)*;
@@ -161,7 +161,7 @@ with_stmt
     | ASYNC 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block;
 
 with_item
-    : expression 'as' star_target {isNextToken(',', ')', ':')}?
+    : expression 'as' star_target {is_(COMMA, CLOSE_PAREN, COLON)}?
     | expression;
 
 try_stmt
@@ -204,7 +204,7 @@ closed_pattern
 
 // Literal patterns are used for equality and identity constraints
 literal_pattern
-    : signed_number {is_notNextToken('+', '-')}?
+    : signed_number {isnot_(PLUS, MINUS)}?
     | complex_number
     | strings
     | 'None'
@@ -213,7 +213,7 @@ literal_pattern
 
 // Literal expressions are used to restrict permitted mapping pattern keys
 literal_expr
-    : signed_number {is_notNextToken('+', '-')}?
+    : signed_number {isnot_(PLUS, MINUS)}?
     | complex_number
     | strings
     | 'None'
@@ -242,13 +242,13 @@ capture_pattern
     : pattern_capture_target;
 
 pattern_capture_target
-    : name_except_underscore NAME {is_notNextToken('.', '(', '=')}?;
+    : name_except_underscore NAME {isnot_(DOT, OPEN_PAREN, EQUAL)}?;
 
 wildcard_pattern
     : underscore_skw;
 
 value_pattern
-    : attr {is_notNextToken('.', '(', '=')}?;
+    : attr {isnot_(DOT, OPEN_PAREN, EQUAL)}?;
 attr
     : name_or_attr '.' NAME;
 name_or_attr
@@ -311,7 +311,7 @@ function_def_raw
     : 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block
     | ASYNC 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block;
 func_type_comment
-    : NEWLINE TYPE_COMMENT {areNextTokens(NEWLINE, INDENT)}?   // Must be followed by indented block
+    : NEWLINE TYPE_COMMENT {are_(NEWLINE, INDENT)}?   // Must be followed by indented block
     | TYPE_COMMENT;
 
 params
@@ -324,15 +324,15 @@ parameters
     | param_with_default+ star_etc?
     | star_etc;
 
-// Some duplication here because we can't write (',' | {isNextToken(')')}?),
+// Some duplication here because we can't write (',' | {is_(CLOSE_PAREN)}?),
 // which is because we don't support empty alternatives (yet).
 //
 slash_no_default
     : param_no_default+ '/' ','
-    | param_no_default+ '/' {isNextToken(')')}?;
+    | param_no_default+ '/' {is_(CLOSE_PAREN)}?;
 slash_with_default
     : param_no_default* param_with_default+ '/' ','
-    | param_no_default* param_with_default+ '/' {isNextToken(')')}?;
+    | param_no_default* param_with_default+ '/' {is_(CLOSE_PAREN)}?;
 
 star_etc
     : '*' param_no_default param_maybe_default* kwds?
@@ -355,13 +355,13 @@ kwds: '**' param_no_default;
 //
 param_no_default
     : param ',' TYPE_COMMENT?
-    | param TYPE_COMMENT? {isNextToken(')')}?;
+    | param TYPE_COMMENT? {is_(CLOSE_PAREN)}?;
 param_with_default
     : param default_assignment ',' TYPE_COMMENT?
-    | param default_assignment TYPE_COMMENT? {isNextToken(')')}?;
+    | param default_assignment TYPE_COMMENT? {is_(CLOSE_PAREN)}?;
 param_maybe_default
     : param default_assignment? ',' TYPE_COMMENT?
-    | param default_assignment? TYPE_COMMENT? {isNextToken(')')}?;
+    | param default_assignment? TYPE_COMMENT? {is_(CLOSE_PAREN)}?;
 param: NAME annotation?;
 
 annotation: ':' expression;
@@ -398,7 +398,7 @@ assignment_expression
 
 named_expression
     : assignment_expression
-    | expression {is_notNextToken(":=")}?;
+    | expression {isnot_(COLONEQUAL)}?;
 
 annotated_rhs: yield_expr | star_expressions;
 
@@ -430,10 +430,10 @@ lambda_parameters
 
 lambda_slash_no_default
     : lambda_param_no_default+ '/' ','
-    | lambda_param_no_default+ '/' {isNextToken(':')}?;
+    | lambda_param_no_default+ '/' {is_(COLON)}?;
 lambda_slash_with_default
     : lambda_param_no_default* lambda_param_with_default+ '/' ','
-    | lambda_param_no_default* lambda_param_with_default+ '/' {isNextToken(':')}?;
+    | lambda_param_no_default* lambda_param_with_default+ '/' {is_(COLON)}?;
 
 lambda_star_etc
     : '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
@@ -444,13 +444,13 @@ lambda_kwds: '**' lambda_param_no_default;
 
 lambda_param_no_default
     : lambda_param ','
-    | lambda_param {isNextToken(':')}?;
+    | lambda_param {is_(COLON)}?;
 lambda_param_with_default
     : lambda_param default_assignment ','
-    | lambda_param default_assignment {isNextToken(':')}?;
+    | lambda_param default_assignment {is_(COLON)}?;
 lambda_param_maybe_default
     : lambda_param default_assignment? ','
-    | lambda_param default_assignment? {isNextToken(':')}?;
+    | lambda_param default_assignment? {is_(COLON)}?;
 lambda_param: NAME;
 
 disjunction
@@ -532,7 +532,7 @@ primary
     | atom;
 
 slices
-    : slice {is_notNextToken(',')}?
+    : slice {isnot_(COMMA)}?
     | slice (',' slice)* ','?;
 slice
     : expression? ':' expression? (':' expression? )?
@@ -559,7 +559,7 @@ tuple
 group
     : '(' (yield_expr | named_expression) ')';
 genexp
-    : '(' ( assignment_expression | expression {is_notNextToken(":=")}?) for_if_clauses ')';
+    : '(' ( assignment_expression | expression {isnot_(COLONEQUAL)}?) for_if_clauses ')';
 set: '{' star_named_expressions '}';
 setcomp
     : '{' named_expression for_if_clauses '}';
@@ -584,9 +584,9 @@ yield_expr
     | 'yield' star_expressions?;
 
 arguments
-    : args ','? {isNextToken(')')}?;
+    : args ','? {is_(CLOSE_PAREN)}?;
 args
-    : (starred_expression | ( assignment_expression | expression {is_notNextToken(":=")}?) {is_notNextToken('=')}?) (',' (starred_expression | ( assignment_expression | expression {is_notNextToken(":=")}?) {is_notNextToken('=')}?))* (',' kwargs )?
+    : (starred_expression | ( assignment_expression | expression {isnot_(COLONEQUAL)}?) {isnot_(EQUAL)}?) (',' (starred_expression | ( assignment_expression | expression {isnot_(COLONEQUAL)}?) {isnot_(EQUAL)}?))* (',' kwargs )?
     | kwargs;
 
 kwargs
@@ -604,18 +604,18 @@ kwarg_or_double_starred
 
 // NOTE: star_targets may contain *bitwise_or, targets may not.
 star_targets
-    : star_target {is_notNextToken(',')}?
+    : star_target {isnot_(COMMA)}?
     | star_target (',' star_target )* ','?;
 star_targets_list_seq: star_target (',' star_target)* ','?;
 star_targets_tuple_seq
     : star_target (',' star_target )+ ','?
     | star_target ',';
 star_target
-    : '*' ({is_notNextToken('*')}? star_target)
+    : '*' ({isnot_(STAR)}? star_target)
     | target_with_star_atom;
 target_with_star_atom
-    : t_primary '.' NAME {is_notNextToken(t_lookahead)}?
-    | t_primary '[' slices ']' {is_notNextToken(t_lookahead)}?
+    : t_primary '.' NAME {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '[' slices ']' {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
     | star_atom;
 star_atom
     : NAME
@@ -628,13 +628,13 @@ single_target
     | NAME
     | '(' single_target ')';
 single_subscript_attribute_target
-    : t_primary '.' NAME {is_notNextToken(t_lookahead)}?
-    | t_primary '[' slices ']' {is_notNextToken(t_lookahead)}?;
+    : t_primary '.' NAME {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '[' slices ']' {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?;
 
 del_targets: del_target (',' del_target)* ','?;
 del_target
-    : t_primary '.' NAME {is_notNextToken(t_lookahead)}?
-    | t_primary '[' slices ']' {is_notNextToken(t_lookahead)}?
+    : t_primary '.' NAME {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '[' slices ']' {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
     | del_t_atom;
 del_t_atom
     : NAME
@@ -643,15 +643,15 @@ del_t_atom
     | '[' del_targets? ']';
 
 t_primary
-    : t_primary '.' NAME {isNextToken(t_lookahead)}?
-    | t_primary '[' slices ']' {isNextToken(t_lookahead)}?
-    | t_primary genexp {isNextToken(t_lookahead)}?
-    | t_primary '(' arguments? ')' {isNextToken(t_lookahead)}?
-    | atom {isNextToken(t_lookahead)}?;
+    : t_primary '.' NAME {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '[' slices ']' {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary genexp {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '(' arguments? ')' {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | atom {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?;
 
 
 // *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
 match_skw              : {isCurrentToken("match")}? NAME;
-case_skw               : {isCurrentToken("case")}? NAME;
+case_skw              : {isCurrentToken("case")}? NAME;
 underscore_skw         : {isCurrentToken("_")}? NAME;
 name_except_underscore : {is_notCurrentToken("_")}? NAME;

@@ -20,15 +20,14 @@ THE SOFTWARE.
  */
 
 /*
- * Project      : a helper class to convert PEG grammar to ANTLR4 grammar
+ * Project      : a helper class to implement PEG grammar specific expressions in an ANTLR4 grammar
  *
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
 
-// https://www.python.org/dev/peps/pep-0617/#id7
-
-import java.util.Arrays;
-import java.util.List;
+// Related PEG grammar expressions:
+// https://www.python.org/dev/peps/pep-0617/#id33
+// https://www.python.org/dev/peps/pep-0617/#id34
 
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.TokenStream;
@@ -40,88 +39,43 @@ public abstract class PythonParserBase extends Parser {
         this.addErrorListener(new IndentationErrorListener());
     }
 
-    protected final List<Integer> t_lookahead = List.of(PythonLexer.OPEN_PAREN, PythonLexer.OPEN_BRACK, PythonLexer.DOT);
+    protected boolean is_(int type1) {
+        return _input.LT(1).getType() == type1;
+    }
 
+    protected boolean isnot_(int type1) {
+        return !is_(type1);
+    }
+
+    protected boolean is_(int type1, int type2) {
+        int nextTokenType = _input.LT(1).getType();
+        return nextTokenType == type1 || nextTokenType == type2;
+    }
+
+    protected boolean isnot_(int type1, int type2) {
+        return !is_(type1, type2);
+    }
+
+    protected boolean is_(int type1, int type2, int type3) {
+        int nextTokenType = _input.LT(1).getType();
+        return nextTokenType == type1 || nextTokenType == type2 || nextTokenType == type3;
+    }
+
+    protected boolean isnot_(int type1, int type2, int type3) {
+        return !is_(type1, type2, type3);
+    }
+
+    protected boolean are_(int type1, int type2) {
+        return _input.LT(1).getType() == type1 && _input.LT(2).getType() == type2;
+    }
+
+    // https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
     protected boolean isCurrentToken(String tokenText) {
         return getCurrentToken().getText().equals(tokenText);
     }
 
-    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
     protected boolean is_notCurrentToken(String tokenText) {
         return !isCurrentToken(tokenText);
-    }
-
-    protected boolean isNextToken(List<Integer> tokenTypeAlternatives) {
-
-        return tokenTypeAlternatives.contains(_input.LT(1).getType());
-    }
-
-    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
-    protected boolean is_notNextToken(List<Integer> tokenTypeAlternatives) {
-        return !isNextToken(tokenTypeAlternatives);
-    }
-
-    protected boolean isNextToken(int... tokenTypeAlternatives) {
-        int nextTokenType = _input.LT(1).getType();
-        for (int type : tokenTypeAlternatives) {
-            if (type == nextTokenType) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
-    protected boolean is_notNextToken(int... tokenTypeAlternatives) {
-        return !isNextToken(tokenTypeAlternatives);
-    }
-
-    protected boolean isNextToken(char... tokenCharAlternatives) {
-        String nextTokenText = _input.LT(1).getText();
-        if (nextTokenText != null) {
-            if (nextTokenText.length() == 1) {
-                char nextTokenChar = nextTokenText.charAt(0);
-                for (char c : tokenCharAlternatives) {
-                    if (c == nextTokenChar) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
-    protected boolean is_notNextToken(char... tokenCharAlternatives) {
-        return !isNextToken(tokenCharAlternatives);
-    }
-
-    protected boolean isNextToken(String... tokenTextAlternatives) {
-        String nextTokenText = _input.LT(1).getText();
-        if (nextTokenText != null) {
-            for (String text : tokenTextAlternatives) {
-                if (text.equals(nextTokenText)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    // function name for other programming languages to call this function from ANTLR4 semantic predicates without Java logical-not-operator ('!')
-    protected boolean is_notNextToken(String... tokenTextAlternatives) {
-        return !isNextToken(tokenTextAlternatives);
-    }
-
-    protected boolean areNextTokens(int... tokenTypeSequence) {
-        int tokenCnt = 1;
-        for (int type : tokenTypeSequence) {
-            if (type != _input.LT(tokenCnt).getType()) {
-                return false;
-            }
-            tokenCnt++;
-        }
-        return true;
     }
 
     @Override

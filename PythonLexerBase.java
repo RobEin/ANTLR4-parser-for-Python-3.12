@@ -84,12 +84,12 @@ public abstract class PythonLexerBase extends Lexer {
     private boolean _wasTabIndentation = false;
 
     private Token _curToken; // current (under processing) token
-    private Token _ffgToken; // following (look ahead) token
+    private Token _ffgToken; // following (lookahead) token
 
     @Override
     public Token nextToken() { // reading of the input stream until a return EOF
         if (_input.size() == 0) {
-            return new CommonToken(EOF, "<EOF>"); // insert an EOF token to the token stream
+            return new CommonToken(EOF, "<EOF>");
         } else {
             checkNextToken();
             return _pendingTokens.pollFirst(); // add the queued token to the token stream
@@ -111,7 +111,7 @@ public abstract class PythonLexerBase extends Lexer {
                 }
                 case PythonLexer.NEWLINE -> handleNEWLINE_Token();
                 case EOF -> handleEOF_token();
-                default -> addPendingToken(_curToken); // add the current token to the token stream
+                default -> addPendingToken(_curToken);
             }
         }
     }
@@ -133,7 +133,7 @@ public abstract class PythonLexerBase extends Lexer {
                 if (_curToken.getChannel() == Lexer.DEFAULT_TOKEN_CHANNEL) {
                     if (_curToken.getType() == PythonLexer.NEWLINE) {
                         // all the NEWLINE tokens must be ignored (hidden) before the first statement
-                        // because the NEWLINE token is always after the statement int the parser rules
+                        // because the NEWLINE token is always after the statement in the parser rules
                         hideAndAddCurrentTokenToPendingTokens();
                     } else { // We're at the first statement
                         _wasStatement = true;
@@ -157,7 +157,7 @@ public abstract class PythonLexerBase extends Lexer {
                 case PythonLexer.NEWLINE -> getIndentationLength(prevToken.getText()) > 0;
                 default -> false; // the rest can be only a LINE_JOINING token (COMMENT token cannot be)
             };
-            if (containsSpaceOrTab) { // there is an indentation before the first statement (input starts with indentation)
+            if (containsSpaceOrTab) { // there is an indentation before the first statement
                 // insert an INDENT token before the first statement to raise an 'unexpected indent' error later by the parser
                 createAndAddPendingToken(PythonLexer.INDENT, _curToken); // insert before the _curToken
             }
