@@ -1,6 +1,6 @@
 # ANTLR4 parser for Python 3.10.2 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### Files:
+### About files:
  - PythonParser.g4
    is the ANTLR4 parser grammar file that based on the official [Python PEG grammar](https://docs.python.org/3.10/reference/grammar.html).
 
