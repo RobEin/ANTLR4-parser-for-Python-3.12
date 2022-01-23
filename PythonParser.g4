@@ -150,9 +150,9 @@ else_block
 while_stmt
     : 'while' named_expression ':' block else_block?;
 
-for_stmt
-    : 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?
-    | ASYNC 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?;
+for_stmt locals [boolean enabled = true]
+    : 'for' star_targets 'in' {$enabled = false;} star_expressions ':' TYPE_COMMENT? block else_block?
+    | {$enabled}? ASYNC 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?;
 
 with_stmt
     : 'with' '(' with_item (',' with_item)* ','? ')' ':' block
@@ -575,9 +575,9 @@ double_starred_kvpair
 kvpair: expression ':' expression;
 for_if_clauses
     : for_if_clause+;
-for_if_clause
-    : ASYNC 'for' star_targets 'in' disjunction ('if' disjunction )*
-    | 'for' star_targets 'in' disjunction ('if' disjunction )*;
+for_if_clause locals [boolean enabled = true]
+    : ASYNC 'for' star_targets 'in' {$enabled = false;} disjunction ('if' disjunction )*
+    | {$enabled}? 'for' star_targets 'in' disjunction ('if' disjunction )*;
 
 yield_expr
     : 'yield' 'from' expression
@@ -652,6 +652,6 @@ t_primary
 
 // *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
 match_skw              : {isCurrentToken("match")}? NAME;
-case_skw              : {isCurrentToken("case")}? NAME;
+case_skw               : {isCurrentToken("case")}? NAME;
 underscore_skw         : {isCurrentToken("_")}? NAME;
 name_except_underscore : {is_notCurrentToken("_")}? NAME;

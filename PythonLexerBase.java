@@ -49,11 +49,10 @@ fragment OS_INDEPEND_NL : '\r'? '\n';
 /*
 parser grammar PythonParser;
 options { tokenVocab=PythonLexer; }
-file_input : (  stmt | NEWLINE )* EOF; // *** NEWLINE must be after the stmt (the name of the start rule (file_input) may be different)
+file_input : (stmt | NEWLINE)* EOF; // *** NEWLINE must be after the stmt (the start rule name /file_input/ may be different)
 */
 
-import java.util.Stack;
-import java.util.LinkedList;
+import java.util.*;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Lexer;
@@ -181,11 +180,13 @@ public abstract class PythonLexerBase extends Lexer {
     }
 
     private void insertIndentDedentTokens() { //*** https://docs.python.org/3/reference/lexical_analysis.html#indentation
-        final int curIndentLength = getIndentationLength(_curToken.getText());
         int prevIndentLength = _indentLengths.peek();
-        if (curIndentLength > prevIndentLength && _ffgToken.getType() != EOF) {
-            createAndAddPendingToken(PythonLexer.INDENT, _ffgToken); // insert an INDENT token before the _ffgToken
-            _indentLengths.push(curIndentLength);
+        final int curIndentLength = getIndentationLength(_curToken.getText());
+        if (curIndentLength > prevIndentLength) {
+            if (_ffgToken.getType() != EOF) {
+                createAndAddPendingToken(PythonLexer.INDENT, _ffgToken); // insert an INDENT token before the _ffgToken
+                _indentLengths.push(curIndentLength);
+            }
         } else {
             while (curIndentLength < prevIndentLength) { // more than 1 DEDENT token may be inserted to the token stream
                 _indentLengths.pop();
