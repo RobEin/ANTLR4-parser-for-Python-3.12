@@ -151,14 +151,14 @@ public abstract class PythonLexerBase extends Lexer {
         if (!_pendingTokens.isEmpty()) { // there is a token before the first statement
             Token prevToken = _pendingTokens.peekLast();
             // make sure the previous token contains space or tab
-            boolean containsSpaceOrTab = switch (prevToken.getType()) {
+            final boolean containsSpaceOrTab = switch (prevToken.getType()) {
                 case PythonLexer.WS -> true;
                 case PythonLexer.NEWLINE -> getIndentationLength(prevToken.getText()) > 0;
                 default -> false; // the rest can be only a LINE_JOINING token (COMMENT token cannot be)
             };
             if (containsSpaceOrTab) { // there is an indentation before the first statement
                 // insert an INDENT token before the first statement to raise an 'unexpected indent' error later by the parser
-                createAndAddPendingToken(PythonLexer.INDENT, _curToken); // insert before the _curToken
+                createAndAddPendingToken(PythonLexer.INDENT, _curToken); // insert an INDENT token before the _curToken
             }
         }
     }
