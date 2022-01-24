@@ -23,6 +23,10 @@ grun Python file -tokens test.py
 ```
 
 
+### Known issues:
+  - slow parser
+
+
 ### Related links:
 [ANTLR 4](https://www.antlr.org/)
 
