@@ -32,25 +32,19 @@ THE SOFTWARE.
 lexer grammar PythonLexer;
 options { superClass=PythonLexerBase; }
 tokens { INDENT, DEDENT }
-OPEN_PAREN  : '(';
-OPEN_BRACK  : '[';
-OPEN_BRACE  : '{';
-CLOSE_PAREN : ')';
-CLOSE_BRACK : ']';
-CLOSE_BRACE : '}';
-NEWLINE     : OS_INDEPEND_NL WS?;
-WS          : [ \t]+         -> channel(HIDDEN);
-COMMENT     : '#' ~[\r\n\f]* -> channel(HIDDEN);
+OPEN_PAREN   : '(';
+OPEN_BRACK   : '[';
+OPEN_BRACE   : '{';
+CLOSE_PAREN  : ')';
+CLOSE_BRACK  : ']';
+CLOSE_BRACE  : '}';
+TYPE_COMMENT : '#' WS? 'type:' WS? ~[\r\n\f]*;
+NEWLINE      : OS_INDEPEND_NL WS?;
+WS           : [ \t]+         -> channel(HIDDEN);
+COMMENT      : '#' ~[\r\n\f]* -> channel(HIDDEN);
 fragment OS_INDEPEND_NL : '\r'? '\n';
  */
 
-
-// *** parser grammar dependencies to use this class with other (old) ANTLR4 Python grammars
-/*
-parser grammar PythonParser;
-options { tokenVocab=PythonLexer; }
-file_input : (stmt | NEWLINE)* EOF; // *** NEWLINE must be after the stmt (the start rule name /file_input/ may be different)
-*/
 
 import java.util.*;
 
@@ -168,7 +162,8 @@ public abstract class PythonLexerBase extends Lexer {
             switch (_ffgToken.getType()) { // the next token type after the current NEWLINE token
                 //*** https://docs.python.org/3/reference/lexical_analysis.html#blank-lines
                 //   We're on a blank line or before a comment, We need to ignore (hide) the current NEWLINE token
-                case PythonLexer.NEWLINE, PythonLexer.COMMENT -> hideAndAddCurrentTokenToPendingTokens();
+                case PythonLexer.NEWLINE, PythonLexer.COMMENT, PythonLexer.TYPE_COMMENT ->
+                    hideAndAddCurrentTokenToPendingTokens();
                 default -> {
                     addPendingToken(_curToken); // add the current NEWLINE token to the token stream
                     insertIndentDedentTokens();
