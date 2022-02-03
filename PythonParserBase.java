@@ -20,7 +20,7 @@ THE SOFTWARE.
  */
 
 /*
- * Project      : a helper class to implement PEG grammar specific expressions in an ANTLR4 grammar
+ * Project      : a helper class to implement specific PEG grammar expressions in an ANTLR4 grammar
  *
  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
  */
@@ -81,8 +81,8 @@ public abstract class PythonParserBase extends Parser {
     @Override
     public void exitRule() {
         super.exitRule();
-        if (getCurrentToken().getType() == EOF) {
-            IndentationErrorListener.displayWarningsAndErrors();
+        if (isMatchedEOF()) {
+            IndentationErrorListener.displayErrors();
         }
     }
 }
