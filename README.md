@@ -11,7 +11,7 @@
 
  - PythonParserBase.java
    is a helper class to implement [PEG grammar specific expressions](https://www.python.org/dev/peps/pep-0617/#grammar-expressions) in an ANTLR4 parser grammar 
-   with semantic predicates.
+   by semantic predicates.
 
 
 ### A simple usage example in command line:
