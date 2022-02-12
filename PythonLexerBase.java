@@ -27,7 +27,7 @@ THE SOFTWARE.
  */
 
 
-// *** lexer grammar dependencies to use this class with other (old) ANTLR4 Python grammars
+// *** lexer grammar dependencies to use this class with other (older) ANTLR4 Python grammars
 /*
 lexer grammar PythonLexer;
 options { superClass=PythonLexerBase; }
@@ -65,15 +65,15 @@ public abstract class PythonLexerBase extends Lexer {
     private final LinkedList<Token> _pendingTokens = new LinkedList<>();
     // last pending token types
     private int _lastPendingTokenType = 0;
-    private int _lastDefaultPendingTokenType = 0;
+    private int _lastPendingTokenTypeFromDefaultChannel = 0;
 
     // The amount of opened braces, brackets and parenthesis
     private int _opened = 0;
 
     // Was there a space char in the indentations?
     private boolean _wasSpaceIndentation = false;
-    // The last line number of the indentation that used tab char
-    private int _lastTabLine = 0;
+    // The last number of the line of the indentation that used tab char
+    private int _lastLineOfTabbedIndentation = 0;
 
     private Token _curToken; // current (under processing) token
     private Token _ffgToken; // following (lookahead) token
@@ -89,7 +89,7 @@ public abstract class PythonLexerBase extends Lexer {
     }
 
     private void checkNextToken() {
-        if (_lastDefaultPendingTokenType != EOF) {
+        if (_lastPendingTokenType != EOF) {
             setCurrentAndFollowingTokens();
             handleStartOfInput();
             switch (_curToken.getType()) {
@@ -150,8 +150,8 @@ public abstract class PythonLexerBase extends Lexer {
             // We're in an implicit line joining, We need to ignore (hide) the current NEWLINE token
             hideAndAddPendingToken(_curToken);
         } else if (_ffgToken.getType() == PythonLexer.WS) {
-            handleWStoken();
-        } else if (isNextTokenNewlineOrComment()) {
+            handleIndentationWStoken();
+        } else if (isNextTokenNewlineOrComment()) { // We're on a blank line or before a comment
             hideAndAddPendingToken(_curToken); // add the hidden NEWLINE token to the token stream
         } else {
             addPendingToken(_curToken);        // add the NEWLINE token to the token stream
@@ -159,10 +159,10 @@ public abstract class PythonLexerBase extends Lexer {
         }
     }
 
-    protected void handleWStoken() {
+    protected void handleIndentationWStoken() {
         Token nlToken = _curToken; // save the current NEWLINE token
         setCurrentAndFollowingTokens(); // Now the current token is the WS token
-        if (isNextTokenNewlineOrComment()) {
+        if (isNextTokenNewlineOrComment()) { // We're on a blank line or before a comment
             hideAndAddPendingToken(nlToken); // add the hidden NEWLINE token to the token stream
             addPendingToken(_curToken);
         } else {
@@ -200,7 +200,7 @@ public abstract class PythonLexerBase extends Lexer {
     }
 
     private void handleEOFtoken() {
-        if (_lastDefaultPendingTokenType > 0) {
+        if (_lastPendingTokenTypeFromDefaultChannel > 0) { // there was statement in the input (leading NEWLINE tokens are hidden)
             insertTrailingTokens();
             checkSpaceAndTabIndentation();
         }
@@ -208,7 +208,7 @@ public abstract class PythonLexerBase extends Lexer {
     }
 
     private void insertTrailingTokens() {
-        switch (_lastDefaultPendingTokenType) {
+        switch (_lastPendingTokenTypeFromDefaultChannel) {
             case PythonLexer.NEWLINE, PythonLexer.DEDENT -> { // no need for trailing NEWLINE token
             }
             default -> createAndAddPendingToken(PythonLexer.NEWLINE, _ffgToken); // insert before the _ffgToken
@@ -218,7 +218,7 @@ public abstract class PythonLexerBase extends Lexer {
     }
 
     private void hideAndAddPendingToken(Token token) {
-        // create a hidden copy of the token and add it to the pending tokens
+        // create a hidden copy of the ^token and add it to the pending tokens
         createAndAddPendingToken(token.getStartIndex(), token.getStopIndex(), token.getText()
                 , token.getType(), Lexer.HIDDEN, token.getLine(), token.getCharPositionInLine());
     }
@@ -241,12 +241,12 @@ public abstract class PythonLexerBase extends Lexer {
     }
 
     private void addPendingToken(Token token) {
-        // save the last token types because the _pendingTokens linked list can be empty by the nextToken()
+        // save the last pending token types because the _pendingTokens linked list can be empty by the nextToken()
         _lastPendingTokenType = token.getType();
-        _pendingTokens.addLast(token); // token will be added to the token stream
         if (token.getChannel() == Lexer.DEFAULT_TOKEN_CHANNEL) {
-            _lastDefaultPendingTokenType = _lastPendingTokenType;
+            _lastPendingTokenTypeFromDefaultChannel = _lastPendingTokenType;
         }
+        _pendingTokens.addLast(token); // the token will be added to the token stream
     }
 
     // Calculates the indentation of the provided spaces, taking the
@@ -258,7 +258,7 @@ public abstract class PythonLexerBase extends Lexer {
     //
     //  -- https://docs.python.org/3/reference/lexical_analysis.html#indentation
     private int getIndentationLength() {
-        final String WS = _curToken.getText();
+        String WS = _curToken.getText();
         final int TAB_LENGTH = 8; // the standard number of spaces to replace a tab to spaces
         int length = 0;
         for (int i = 0; i < WS.length(); i++) {
@@ -268,7 +268,7 @@ public abstract class PythonLexerBase extends Lexer {
                     length += 1;
                 }
                 case '\t' -> {
-                    _lastTabLine = _curToken.getLine();
+                    _lastLineOfTabbedIndentation = _curToken.getLine();
                     length += TAB_LENGTH - (length % TAB_LENGTH);
                 }
             }
@@ -277,8 +277,8 @@ public abstract class PythonLexerBase extends Lexer {
     }
 
     private void checkSpaceAndTabIndentation() {
-        if (_wasSpaceIndentation && _lastTabLine > 0) {
-            IndentationErrorListener.lexerError(" line " + _lastTabLine
+        if (_wasSpaceIndentation && _lastLineOfTabbedIndentation > 0) {
+            IndentationErrorListener.lexerError(" line " + _lastLineOfTabbedIndentation
                     + ":\t inconsistent use of tabs and spaces in indentation");
         }
     }
