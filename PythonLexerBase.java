@@ -64,7 +64,7 @@ public abstract class PythonLexerBase extends Lexer {
     // A linked list where tokens are waiting to be loaded into the token stream
     private final LinkedList<Token> _pendingTokens = new LinkedList<>();
     // last pending token types
-    private int _lastPendingTokenType = 0;
+    private int _lastPendingTokenTypeOfChannels = 0;
     private int _lastPendingTokenTypeFromDefaultChannel = 0;
 
     // The amount of opened braces, brackets and parenthesis
@@ -89,7 +89,7 @@ public abstract class PythonLexerBase extends Lexer {
     }
 
     private void checkNextToken() {
-        if (_lastPendingTokenType != EOF) {
+        if (_lastPendingTokenTypeOfChannels != EOF) {
             setCurrentAndFollowingTokens();
             handleStartOfInput();
             switch (_curToken.getType()) {
@@ -139,7 +139,7 @@ public abstract class PythonLexerBase extends Lexer {
     }
 
     private void insertLeadingIndentToken() {
-        if (_lastPendingTokenType == PythonLexer.WS) { // there is an "indentation" before the first statement
+        if (_lastPendingTokenTypeOfChannels == PythonLexer.WS) { // there is an "indentation" before the first statement
             // insert an INDENT token before the first statement to raise an 'unexpected indent' error later by the parser
             createAndAddPendingToken(PythonLexer.INDENT, _curToken); // insert an INDENT token before the _curToken
         }
@@ -242,9 +242,9 @@ public abstract class PythonLexerBase extends Lexer {
 
     private void addPendingToken(Token token) {
         // save the last pending token types because the _pendingTokens linked list can be empty by the nextToken()
-        _lastPendingTokenType = token.getType();
+        _lastPendingTokenTypeOfChannels = token.getType();
         if (token.getChannel() == Lexer.DEFAULT_TOKEN_CHANNEL) {
-            _lastPendingTokenTypeFromDefaultChannel = _lastPendingTokenType;
+            _lastPendingTokenTypeFromDefaultChannel = _lastPendingTokenTypeOfChannels;
         }
         _pendingTokens.addLast(token); // the token will be added to the token stream
     }
