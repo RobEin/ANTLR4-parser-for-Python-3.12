@@ -37,3 +37,5 @@ grun Python file -tokens test.py
 [Python 3.10 Lexical Analysis](https://docs.python.org/3.10/reference/lexical_analysis.html)
 
 [cpython](https://github.com/python/cpython)
+
+[ANTLR4 parser for Python 3.8.12](https://github.com/RobEin/ANTLR4-parser-for-Python-3.8.12)
