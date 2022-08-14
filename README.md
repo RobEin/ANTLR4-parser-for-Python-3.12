@@ -25,6 +25,7 @@ grun Python file -tokens test.py
 
 ### Known issues:
   - slow parser
+  - some probelems with the match statement (see known_issues folder)
 
 
 ### Related links:
