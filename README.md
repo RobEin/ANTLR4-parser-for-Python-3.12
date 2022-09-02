@@ -25,7 +25,7 @@ grun Python file -tokens test.py
 
 ### Known issues:
   - slow parser
-  - some probelems with the match statement (see known_issues folder)
+  - some probelems with the match statement (see [known_issues directory](https://github.com/RobEin/ANTLR4-Python-grammar-by-PEG/tree/main/known_issues))
 
 
 ### Related links:
