@@ -21,10 +21,10 @@ THE SOFTWARE.
  */
 
  /*
- * Project      : an ANTLR4 lexer grammar for Python 3
- *                https://github.com/RobEin/ANTLR4-Python-grammar-by-PEG
- * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
- */
+  * Project      : an ANTLR4 lexer grammar for Python 3
+  *                https://github.com/RobEin/ANTLR4-Python-grammar-by-PEG
+  * Developed by : Robert Einhorn
+  */
 
 lexer grammar PythonLexer;
 options { superClass=PythonLexerBase; }
@@ -138,7 +138,7 @@ TYPE_COMMENT
     ;
 
 NEWLINE
-    : OS_INDEPEND_NL
+    : OS_INDEPENDENT_NL
     ;
 
 COMMENT      : '#' ~[\r\n\f]* -> channel(HIDDEN);
@@ -146,7 +146,7 @@ WS           : [ \t]+         -> channel(HIDDEN);
 LINE_JOINING : '\\' NEWLINE   -> channel(HIDDEN);
 
 /*
- * fragments
+ * fragments   (with all capital letters just like in the official Python grammar)
  */
 
 fragment STRING_LITERAL : STRING_PREFIX? (SHORT_STRING | LONG_STRING);
@@ -163,7 +163,7 @@ fragment SHORT_STRING_CHAR_NO_SINGLE_QUOTE : ~[\\\r\n'];       // <any source ch
 fragment SHORT_STRING_CHAR_NO_DOUBLE_QUOTE : ~[\\\r\n"];       // <any source character except "\" or newline or double quote>
 
 fragment LONG_STRING_CHAR  : ~'\\';                            // <any source character except "\">
-fragment STRING_ESCAPE_SEQ : '\\' (OS_INDEPEND_NL | .);        // <any source character>
+fragment STRING_ESCAPE_SEQ : '\\' (OS_INDEPENDENT_NL | .);     // <any source character>
 
 fragment BYTES_LITERAL : BYTES_PREFIX(SHORT_BYTES | LONG_BYTES);
 fragment BYTES_PREFIX  : 'b' | 'B' | 'br' | 'Br' | 'bR' | 'BR' | 'rb' | 'rB' | 'Rb' | 'RB';
@@ -214,7 +214,7 @@ fragment EXPONENT       : ('e' | 'E') ('+' | '-')? DIGIT_PART;
 
 fragment IMAG_NUMBER : (FLOAT_NUMBER | DIGIT_PART) ('j' | 'J');
 
-fragment OS_INDEPEND_NL : '\r'? '\n'; // Unix, Windows
+fragment OS_INDEPENDENT_NL : '\r'? '\n'; // Unix, Windows
 
 fragment ID_CONTINUE // based on: https://github.com/asmeurer/python-unicode-variable-names
  : ID_START

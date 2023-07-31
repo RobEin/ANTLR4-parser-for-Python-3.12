@@ -1,5 +1,5 @@
 # REQUIREMENT:
-# - error message: "line 7:         inconsistent use of tabs and spaces in indentation"
+#   - error message: "line 7:         inconsistent use of tabs and spaces in indentation"
 
 if True:
     i = 0  # indent by spaces

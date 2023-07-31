@@ -21,15 +21,16 @@ THE SOFTWARE.
  */
 
  /*
- * Project      : an ANTLR4 parser grammar by the official PEG grammar
- *                https://github.com/RobEin/ANTLR4-Python-grammar-by-PEG
- * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
- */
+  * Project      : an ANTLR4 parser grammar by the official PEG grammar
+  *                https://github.com/RobEin/ANTLR4-Python-grammar-by-PEG
+  * Developed by : Robert Einhorn
+  */
 
-parser grammar PythonParser; // Python 3.10.2    https://docs.python.org/3.10/reference/grammar.html
+parser grammar PythonParser; // Python 3.11.4    https://docs.python.org/3.11/reference/grammar.html
 options { tokenVocab=PythonLexer; superClass=PythonParserBase; }
-// ANTLR4 grammar for Python
 
+// STARTING RULES
+// ==============
 
 file: statements? EOF;
 interactive: statement_newline;
@@ -37,26 +38,23 @@ eval: expressions NEWLINE* EOF;
 func_type: '(' type_expressions? ')' '->' expression NEWLINE* EOF;
 fstring: star_expressions;
 
-// type_expressions allow */** but ignore them
-type_expressions
-    : expression (',' expression)* ',' '*' expression ',' '**' expression
-    | expression (',' expression)* ',' '*' expression
-    | expression (',' expression)* ',' '**' expression
-    | '*' expression ',' '**' expression
-    | '*' expression
-    | '**' expression
-    | expression (',' expression)*;
+// GENERAL STATEMENTS
+// ==================
 
 statements: statement+;
+
 statement: compound_stmt  | simple_stmts;
+
 statement_newline
     : compound_stmt NEWLINE
     | simple_stmts
     | NEWLINE
     | EOF;
+
 simple_stmts
-    : simple_stmt {isnot_(SEMI)}? NEWLINE  // Not needed, there for speedup
+    : simple_stmt {isnotCurrentTokenType(SEMI)}? NEWLINE  // Not needed, there for speedup
     | simple_stmt (';' simple_stmt)* ';'? NEWLINE;
+
 // NOTE: assignment MUST precede expression, else parsing a simple assignment
 // will throw a SyntaxError.
 simple_stmt
@@ -73,6 +71,7 @@ simple_stmt
     | 'continue'
     | global_stmt
     | nonlocal_stmt;
+
 compound_stmt
     : function_def
     | if_stmt
@@ -83,13 +82,18 @@ compound_stmt
     | while_stmt
     | match_stmt;
 
+// SIMPLE STATEMENTS
+// =================
+
 // NOTE: annotated_rhs may start with 'yield'; yield_expr must start with 'yield'
 assignment
     : NAME ':' expression ('=' annotated_rhs )?
     | ('(' single_target ')'
          | single_subscript_attribute_target) ':' expression ('=' annotated_rhs )?
-    | (star_targets '=' )+ (yield_expr | star_expressions) {isnot_(EQUAL)}? TYPE_COMMENT?
+    | (star_targets '=' )+ (yield_expr | star_expressions) {isnotCurrentTokenType(EQUAL)}? TYPE_COMMENT?
     | single_target augassign (yield_expr | star_expressions);
+
+annotated_rhs: yield_expr | star_expressions;
 
 augassign
     : '+='
@@ -106,17 +110,29 @@ augassign
     | '**='
     | '//=';
 
+return_stmt
+    : 'return' star_expressions?;
+
+raise_stmt
+    : 'raise' expression ('from' expression )?
+    | 'raise';
+
 global_stmt: 'global' NAME (',' NAME)*;
+
 nonlocal_stmt: 'nonlocal' NAME (',' NAME)*;
+
+del_stmt
+    : 'del' del_targets {isCurrentTokenType(';' | NEWLINE)}?;
 
 yield_stmt: yield_expr;
 
 assert_stmt: 'assert' expression (',' expression )?;
 
-del_stmt
-    : 'del' del_targets {is_(SEMI, NEWLINE)}?;
-
 import_stmt: import_name | import_from;
+
+// Import statements
+// -----------------
+
 import_name: 'import' dotted_as_names;
 // note below: the ('.' | '...') is necessary because '...' is tokenized as ELLIPSIS
 import_from
@@ -124,7 +140,7 @@ import_from
     | 'from' ('.' | '...')+ 'import' import_from_targets;
 import_from_targets
     : '(' import_from_as_names ','? ')'
-    | import_from_as_names {isnot_(COMMA)}?
+    | import_from_as_names {isnotCurrentTokenType(COMMA)}?
     | '*';
 import_from_as_names
     : import_from_as_name (',' import_from_as_name)*;
@@ -138,6 +154,105 @@ dotted_name
     : dotted_name '.' NAME
     | NAME;
 
+// COMPOUND STATEMENTS
+// ===================
+
+// Common elements
+// ---------------
+
+block
+    : NEWLINE INDENT statements DEDENT
+    | simple_stmts;
+
+decorators: ('@' named_expression NEWLINE )+;
+
+// Class definitions
+// -----------------
+
+class_def
+    : decorators class_def_raw
+    | class_def_raw;
+
+class_def_raw
+    : 'class' NAME ('(' arguments? ')' )? ':' block;
+
+// Function definitions
+// --------------------
+
+function_def
+    : decorators function_def_raw
+    | function_def_raw;
+
+function_def_raw
+    : 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block
+    | ASYNC 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block;
+
+// Function parameters
+// -------------------
+
+params
+    : parameters;
+
+parameters
+    : slash_no_default param_no_default* param_with_default* star_etc?
+    | slash_with_default param_with_default* star_etc?
+    | param_no_default+ param_with_default* star_etc?
+    | param_with_default+ star_etc?
+    | star_etc;
+
+// Some duplication here because we can't write (',' | {isCurrentTokenType(CLOSE_PAREN)}?),
+// which is because we don't support empty alternatives (yet).
+
+slash_no_default
+    : param_no_default+ '/' ','
+    | param_no_default+ '/' {isCurrentTokenType(CLOSE_PAREN)}?;
+slash_with_default
+    : param_no_default* param_with_default+ '/' ','
+    | param_no_default* param_with_default+ '/' {isCurrentTokenType(CLOSE_PAREN)}?;
+
+star_etc
+    : '*' param_no_default param_maybe_default* kwds?
+    | '*' param_no_default_star_annotation param_maybe_default* kwds?
+    | '*' ',' param_maybe_default+ kwds?
+    | kwds;
+
+kwds
+    : '**' param_no_default;
+
+// One parameter.  This *includes* a following comma and type comment.
+//
+// There are three styles:
+// - No default_assignment
+// - With default_assignment
+// - Maybe with default_assignment
+//
+// There are two alternative forms of each, to deal with type comments:
+// - Ends in a comma followed by an optional type comment
+// - No comma, optional type comment, must be followed by close paren
+// The latter form is for a final parameter without trailing comma.
+//
+
+param_no_default
+    : param ',' TYPE_COMMENT?
+    | param TYPE_COMMENT? {isCurrentTokenType(CLOSE_PAREN)}?;
+param_no_default_star_annotation
+    : param_star_annotation ',' TYPE_COMMENT?
+    | param_star_annotation TYPE_COMMENT? {isCurrentTokenType(CLOSE_PAREN)}?;
+param_with_default
+    : param default_assignment ',' TYPE_COMMENT?
+    | param default_assignment TYPE_COMMENT? {isCurrentTokenType(CLOSE_PAREN)}?;
+param_maybe_default
+    : param default_assignment? ',' TYPE_COMMENT?
+    | param default_assignment? TYPE_COMMENT? {isCurrentTokenType(CLOSE_PAREN)}?;
+param: NAME annotation?;
+param_star_annotation: NAME star_annotation;
+annotation: ':' expression;
+star_annotation: ':' star_expression;
+default_assignment: '=' expression;
+
+// If statement
+// ------------
+
 if_stmt
     : 'if' named_expression ':' block elif_stmt
     | 'if' named_expression ':' block else_block?;
@@ -147,12 +262,21 @@ elif_stmt
 else_block
     : 'else' ':' block;
 
+// While statement
+// ---------------
+
 while_stmt
     : 'while' named_expression ':' block else_block?;
 
-for_stmt locals [boolean enabled = true]
-    : 'for' star_targets 'in' {$enabled = false;} star_expressions ':' TYPE_COMMENT? block else_block?
-    | {$enabled}? ASYNC 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?;
+// For statement
+// -------------
+
+for_stmt
+    : 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?
+    | ASYNC 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?;
+
+// With statement
+// --------------
 
 with_stmt
     : 'with' '(' with_item (',' with_item)* ','? ')' ':' block
@@ -161,37 +285,58 @@ with_stmt
     | ASYNC 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block;
 
 with_item
-    : expression 'as' star_target {is_(COMMA, CLOSE_PAREN, COLON)}?
+    : expression 'as' star_target {isCurrentTokenType(COMMA, CLOSE_PAREN, COLON)}?
     | expression;
+
+// Try statement
+// -------------
 
 try_stmt
     : 'try' ':' block finally_block
-    | 'try' ':' block except_block+ else_block? finally_block?;
+    | 'try' ':' block except_block+ else_block? finally_block?
+    | 'try' ':' block except_star_block+ else_block? finally_block?;
+
+
+// Except statement
+// ----------------
+
 except_block
     : 'except' expression ('as' NAME )? ':' block
     | 'except' ':' block;
+except_star_block
+    : 'except' '*' expression ('as' NAME )? ':' block;
 finally_block
     : 'finally' ':' block;
 
+// Match statement
+// ---------------
+
 match_stmt
-    : match_skw subject_expr ':' NEWLINE INDENT case_block+ DEDENT;
+    : match_soft_kw subject_expr ':' NEWLINE INDENT case_block+ DEDENT;
+
 subject_expr
     : star_named_expression ',' star_named_expressions?
     | named_expression;
+
 case_block
-    : case_skw patterns guard? ':' block;
+    : case_soft_kw patterns guard? ':' block;
+
 guard: 'if' named_expression;
 
 patterns
     : open_sequence_pattern
     | pattern;
+
 pattern
     : as_pattern
     | or_pattern;
+
 as_pattern
     : or_pattern 'as' pattern_capture_target;
+
 or_pattern
     : closed_pattern ('|' closed_pattern)*;
+
 closed_pattern
     : literal_pattern
     | capture_pattern
@@ -204,7 +349,7 @@ closed_pattern
 
 // Literal patterns are used for equality and identity constraints
 literal_pattern
-    : signed_number {isnot_(PLUS, MINUS)}?
+    : signed_number {isnotCurrentTokenType(PLUS, MINUS)}?
     | complex_number
     | strings
     | 'None'
@@ -213,7 +358,7 @@ literal_pattern
 
 // Literal expressions are used to restrict permitted mapping pattern keys
 literal_expr
-    : signed_number {isnot_(PLUS, MINUS)}?
+    : signed_number {isnotCurrentTokenType(PLUS, MINUS)}?
     | complex_number
     | strings
     | 'None'
@@ -242,18 +387,20 @@ capture_pattern
     : pattern_capture_target;
 
 pattern_capture_target
-    : name_except_underscore NAME {isnot_(DOT, OPEN_PAREN, EQUAL)}?;
+    : {isnotCurrentTokenText("_")}? NAME {isnotCurrentTokenType(DOT, OPEN_PAREN, EQUAL)}?;
 
 wildcard_pattern
-    : underscore_skw;
+    : underscore_soft_kw;
 
 value_pattern
-    : attr {isnot_(DOT, OPEN_PAREN, EQUAL)}?;
+    : attr {isnotCurrentTokenType(DOT, OPEN_PAREN, EQUAL)}?;
+
 attr
-    : name_or_attr '.' NAME;
+    : NAME ('.' NAME)+;
+
 name_or_attr
-    : name_or_attr '.' NAME
-    | NAME;
+    : NAME ('.' NAME)*;
+
 
 group_pattern
     : '(' pattern ')';
@@ -261,13 +408,17 @@ group_pattern
 sequence_pattern
     : '[' maybe_sequence_pattern? ']'
     | '(' open_sequence_pattern? ')';
+
 open_sequence_pattern
     : maybe_star_pattern ',' maybe_sequence_pattern?;
+
 maybe_sequence_pattern
     : maybe_star_pattern (',' maybe_star_pattern)* ','?;
+
 maybe_star_pattern
     : star_pattern
     | pattern;
+
 star_pattern
     : '*' pattern_capture_target
     | '*' wildcard_pattern;
@@ -277,10 +428,13 @@ mapping_pattern
     | '{' double_star_pattern ','? '}'
     | '{' items_pattern ',' double_star_pattern ','? '}'
     | '{' items_pattern ','? '}';
+
 items_pattern
     : key_value_pattern (',' key_value_pattern)*;
+
 key_value_pattern
     : (literal_expr | attr) ':' pattern;
+
 double_star_pattern
     : '**' pattern_capture_target;
 
@@ -289,127 +443,185 @@ class_pattern
     | name_or_attr '(' positional_patterns ','? ')'
     | name_or_attr '(' keyword_patterns ','? ')'
     | name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')';
+
 positional_patterns
     : pattern (',' pattern)*;
+
 keyword_patterns
     : keyword_pattern (',' keyword_pattern)*;
+
 keyword_pattern
     : NAME '=' pattern;
 
-return_stmt
-    : 'return' star_expressions?;
+// EXPRESSIONS
+// -----------
 
-raise_stmt
-    : 'raise' expression ('from' expression )?
-    | 'raise';
+expressions
+    : expression (',' expression )+ ','?
+    | expression ','
+    | expression;
 
-function_def
-    : decorators function_def_raw
-    | function_def_raw;
+expression
+    : disjunction 'if' disjunction 'else' expression
+    | disjunction
+    | lambdef;
 
-function_def_raw
-    : 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block
-    | ASYNC 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block;
-func_type_comment
-    : NEWLINE TYPE_COMMENT {are_(NEWLINE, INDENT)}?   // Must be followed by indented block
-    | TYPE_COMMENT;
-
-params
-    : parameters;
-
-parameters
-    : slash_no_default param_no_default* param_with_default* star_etc?
-    | slash_with_default param_with_default* star_etc?
-    | param_no_default+ param_with_default* star_etc?
-    | param_with_default+ star_etc?
-    | star_etc;
-
-// Some duplication here because we can't write (',' | {is_(CLOSE_PAREN)}?),
-// which is because we don't support empty alternatives (yet).
-//
-slash_no_default
-    : param_no_default+ '/' ','
-    | param_no_default+ '/' {is_(CLOSE_PAREN)}?;
-slash_with_default
-    : param_no_default* param_with_default+ '/' ','
-    | param_no_default* param_with_default+ '/' {is_(CLOSE_PAREN)}?;
-
-star_etc
-    : '*' param_no_default param_maybe_default* kwds?
-    | '*' ',' param_maybe_default+ kwds?
-    | kwds;
-
-kwds: '**' param_no_default;
-
-// One parameter.  This *includes* a following comma and type comment.
-//
-// There are three styles:
-// - No default_assignment
-// - With default_assignment
-// - Maybe with default_assignment
-//
-// There are two alternative forms of each, to deal with type comments:
-// - Ends in a comma followed by an optional type comment
-// - No comma, optional type comment, must be followed by close paren
-// The latter form is for a final parameter without trailing comma.
-//
-param_no_default
-    : param ',' TYPE_COMMENT?
-    | param TYPE_COMMENT? {is_(CLOSE_PAREN)}?;
-param_with_default
-    : param default_assignment ',' TYPE_COMMENT?
-    | param default_assignment TYPE_COMMENT? {is_(CLOSE_PAREN)}?;
-param_maybe_default
-    : param default_assignment? ',' TYPE_COMMENT?
-    | param default_assignment? TYPE_COMMENT? {is_(CLOSE_PAREN)}?;
-param: NAME annotation?;
-
-annotation: ':' expression;
-default_assignment: '=' expression;
-
-decorators: ('@' named_expression NEWLINE )+;
-
-class_def
-    : decorators class_def_raw
-    | class_def_raw;
-class_def_raw
-    : 'class' NAME ('(' arguments? ')' )? ':' block;
-
-block
-    : NEWLINE INDENT statements DEDENT
-    | simple_stmts;
+yield_expr
+    : 'yield' 'from' expression
+    | 'yield' star_expressions?;
 
 star_expressions
     : star_expression (',' star_expression )+ ','?
     | star_expression ','
     | star_expression;
+
 star_expression
     : '*' bitwise_or
     | expression;
 
 star_named_expressions: star_named_expression (',' star_named_expression)* ','?;
+
 star_named_expression
     : '*' bitwise_or
     | named_expression;
-
 
 assignment_expression
     : NAME ':=' expression;
 
 named_expression
     : assignment_expression
-    | expression {isnot_(COLONEQUAL)}?;
+    | expression {isnotCurrentTokenType(COLONEQUAL)}?;
 
-annotated_rhs: yield_expr | star_expressions;
+disjunction
+    : conjunction ('or' conjunction )+
+    | conjunction;
 
-expressions
-    : expression (',' expression )+ ','?
-    | expression ','
-    | expression;
-expression
-    : disjunction 'if' disjunction 'else' expression
-    | disjunction
-    | lambdef;
+conjunction
+    : inversion ('and' inversion )+
+    | inversion;
+
+inversion
+    : 'not' inversion
+    | comparison;
+
+// Comparison operators
+// --------------------
+
+comparison
+    : bitwise_or compare_op_bitwise_or_pair+
+    | bitwise_or;
+
+compare_op_bitwise_or_pair
+    : eq_bitwise_or
+    | noteq_bitwise_or
+    | lte_bitwise_or
+    | lt_bitwise_or
+    | gte_bitwise_or
+    | gt_bitwise_or
+    | notin_bitwise_or
+    | in_bitwise_or
+    | isnot_bitwise_or
+    | is_bitwise_or;
+
+eq_bitwise_or: '==' bitwise_or;
+noteq_bitwise_or
+    : ('!=' ) bitwise_or;
+lte_bitwise_or: '<=' bitwise_or;
+lt_bitwise_or: '<' bitwise_or;
+gte_bitwise_or: '>=' bitwise_or;
+gt_bitwise_or: '>' bitwise_or;
+notin_bitwise_or: 'not' 'in' bitwise_or;
+in_bitwise_or: 'in' bitwise_or;
+isnot_bitwise_or: 'is' 'not' bitwise_or;
+is_bitwise_or: 'is' bitwise_or;
+
+// Bitwise operators
+// -----------------
+
+bitwise_or
+    : bitwise_or '|' bitwise_xor
+    | bitwise_xor;
+
+bitwise_xor
+    : bitwise_xor '^' bitwise_and
+    | bitwise_and;
+
+bitwise_and
+    : bitwise_and '&' shift_expr
+    | shift_expr;
+
+shift_expr
+    : shift_expr '<<' sum
+    | shift_expr '>>' sum
+    | sum;
+
+// Arithmetic operators
+// --------------------
+
+sum
+    : sum '+' term
+    | sum '-' term
+    | term;
+
+term
+    : term '*' factor
+    | term '/' factor
+    | term '//' factor
+    | term '%' factor
+    | term '@' factor
+    | factor;
+
+factor
+    : '+' factor
+    | '-' factor
+    | '~' factor
+    | power;
+
+power
+    : await_primary '**' factor
+    | await_primary;
+
+// Primary elements
+// ----------------
+
+// Primary elements are things like "obj.something.something", "obj[something]", "obj(something)", "obj" ...
+
+await_primary
+    : AWAIT primary
+    | primary;
+
+primary
+    : primary '.' NAME
+    | primary genexp
+    | primary '(' arguments? ')'
+    | primary '[' slices ']'
+    | atom;
+
+slices
+    : slice {isnotCurrentTokenType(COMMA)}?
+    | (slice | starred_expression) (',' (slice | starred_expression))* ','?;
+
+slice
+    : expression? ':' expression? (':' expression? )?
+    | named_expression;
+
+atom
+    : NAME
+    | 'True'
+    | 'False'
+    | 'None'
+    | strings
+    | NUMBER
+    | (tuple | group | genexp)
+    | (list | listcomp)
+    | (dict | set | dictcomp | setcomp)
+    | '...';
+
+group
+    : '(' (yield_expr | named_expression) ')';
+
+// Lambda functions
+// ----------------
 
 lambdef
     : 'lambda' lambda_params? ':' expression;
@@ -430,193 +642,132 @@ lambda_parameters
 
 lambda_slash_no_default
     : lambda_param_no_default+ '/' ','
-    | lambda_param_no_default+ '/' {is_(COLON)}?;
+    | lambda_param_no_default+ '/' {isCurrentTokenType(COLON)}?;
+
 lambda_slash_with_default
     : lambda_param_no_default* lambda_param_with_default+ '/' ','
-    | lambda_param_no_default* lambda_param_with_default+ '/' {is_(COLON)}?;
+    | lambda_param_no_default* lambda_param_with_default+ '/' {isCurrentTokenType(COLON)}?;
 
 lambda_star_etc
     : '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
     | '*' ',' lambda_param_maybe_default+ lambda_kwds?
     | lambda_kwds;
 
-lambda_kwds: '**' lambda_param_no_default;
+lambda_kwds
+    : '**' lambda_param_no_default;
 
 lambda_param_no_default
     : lambda_param ','
-    | lambda_param {is_(COLON)}?;
+    | lambda_param {isCurrentTokenType(COLON)}?;
 lambda_param_with_default
     : lambda_param default_assignment ','
-    | lambda_param default_assignment {is_(COLON)}?;
+    | lambda_param default_assignment {isCurrentTokenType(COLON)}?;
 lambda_param_maybe_default
     : lambda_param default_assignment? ','
-    | lambda_param default_assignment? {is_(COLON)}?;
+    | lambda_param default_assignment? {isCurrentTokenType(COLON)}?;
 lambda_param: NAME;
 
-disjunction
-    : conjunction ('or' conjunction )+
-    | conjunction;
-conjunction
-    : inversion ('and' inversion )+
-    | inversion;
-inversion
-    : 'not' inversion
-    | comparison;
-comparison
-    : bitwise_or compare_op_bitwise_or_pair+
-    | bitwise_or;
-compare_op_bitwise_or_pair
-    : eq_bitwise_or
-    | noteq_bitwise_or
-    | lte_bitwise_or
-    | lt_bitwise_or
-    | gte_bitwise_or
-    | gt_bitwise_or
-    | notin_bitwise_or
-    | in_bitwise_or
-    | isnot_bitwise_or
-    | is_bitwise_or;
-eq_bitwise_or: '==' bitwise_or;
-noteq_bitwise_or
-    : ('!=' ) bitwise_or;
-lte_bitwise_or: '<=' bitwise_or;
-lt_bitwise_or: '<' bitwise_or;
-gte_bitwise_or: '>=' bitwise_or;
-gt_bitwise_or: '>' bitwise_or;
-notin_bitwise_or: 'not' 'in' bitwise_or;
-in_bitwise_or: 'in' bitwise_or;
-isnot_bitwise_or: 'is' 'not' bitwise_or;
-is_bitwise_or: 'is' bitwise_or;
-
-bitwise_or
-    : bitwise_or '|' bitwise_xor
-    | bitwise_xor;
-bitwise_xor
-    : bitwise_xor '^' bitwise_and
-    | bitwise_and;
-bitwise_and
-    : bitwise_and '&' shift_expr
-    | shift_expr;
-shift_expr
-    : shift_expr '<<' sum
-    | shift_expr '>>' sum
-    | sum;
-
-sum
-    : sum '+' term
-    | sum '-' term
-    | term;
-term
-    : term '*' factor
-    | term '/' factor
-    | term '//' factor
-    | term '%' factor
-    | term '@' factor
-    | factor;
-factor
-    : '+' factor
-    | '-' factor
-    | '~' factor
-    | power;
-power
-    : await_primary '**' factor
-    | await_primary;
-await_primary
-    : AWAIT primary
-    | primary;
-primary
-    : primary '.' NAME
-    | primary genexp
-    | primary '(' arguments? ')'
-    | primary '[' slices ']'
-    | atom;
-
-slices
-    : slice {isnot_(COMMA)}?
-    | slice (',' slice)* ','?;
-slice
-    : expression? ':' expression? (':' expression? )?
-    | named_expression;
-atom
-    : NAME
-    | 'True'
-    | 'False'
-    | 'None'
-    | strings
-    | NUMBER
-    | (tuple | group | genexp)
-    | (list | listcomp)
-    | (dict | set | dictcomp | setcomp)
-    | '...';
+// LITERALS
+// ========
 
 strings: STRING+;
+
 list
     : '[' star_named_expressions? ']';
-listcomp
-    : '[' named_expression for_if_clauses ']';
+
 tuple
     : '(' (star_named_expression ',' star_named_expressions?  )? ')';
-group
-    : '(' (yield_expr | named_expression) ')';
-genexp
-    : '(' ( assignment_expression | expression {isnot_(COLONEQUAL)}?) for_if_clauses ')';
+
 set: '{' star_named_expressions '}';
-setcomp
-    : '{' named_expression for_if_clauses '}';
+
+// Dicts
+// -----
+
 dict
     : '{' double_starred_kvpairs? '}';
 
-dictcomp
-    : '{' kvpair for_if_clauses '}';
 double_starred_kvpairs: double_starred_kvpair (',' double_starred_kvpair)* ','?;
+
 double_starred_kvpair
     : '**' bitwise_or
     | kvpair;
+
 kvpair: expression ':' expression;
+
+// Comprehensions & Generators
+// ---------------------------
+
 for_if_clauses
     : for_if_clause+;
-for_if_clause locals [boolean enabled = true]
-    : ASYNC 'for' star_targets 'in' {$enabled = false;} disjunction ('if' disjunction )*
-    | {$enabled}? 'for' star_targets 'in' disjunction ('if' disjunction )*;
 
-yield_expr
-    : 'yield' 'from' expression
-    | 'yield' star_expressions?;
+for_if_clause
+    : ASYNC 'for' star_targets 'in' disjunction ('if' disjunction )*
+    | 'for' star_targets 'in' disjunction ('if' disjunction )*;
+
+listcomp
+    : '[' named_expression for_if_clauses ']';
+
+setcomp
+    : '{' named_expression for_if_clauses '}';
+
+genexp
+    : '(' ( assignment_expression | expression {isnotCurrentTokenType(COLONEQUAL)}?) for_if_clauses ')';
+
+dictcomp
+    : '{' kvpair for_if_clauses '}';
+
+// FUNCTION CALL ARGUMENTS
+// =======================
 
 arguments
-    : args ','? {is_(CLOSE_PAREN)}?;
+    : args ','? {isCurrentTokenType(CLOSE_PAREN)}?;
+
 args
-    : (starred_expression | ( assignment_expression | expression {isnot_(COLONEQUAL)}?) {isnot_(EQUAL)}?) (',' (starred_expression | ( assignment_expression | expression {isnot_(COLONEQUAL)}?) {isnot_(EQUAL)}?))* (',' kwargs )?
+    : (starred_expression | ( assignment_expression | expression {isnotCurrentTokenType(COLONEQUAL)}?) {isnotCurrentTokenType(EQUAL)}?) (',' (starred_expression | ( assignment_expression | expression {isnotCurrentTokenType(COLONEQUAL)}?) {isnotCurrentTokenType(EQUAL)}?))* (',' kwargs )?
     | kwargs;
 
 kwargs
     : kwarg_or_starred (',' kwarg_or_starred)* ',' kwarg_or_double_starred (',' kwarg_or_double_starred)*
     | kwarg_or_starred (',' kwarg_or_starred)*
     | kwarg_or_double_starred (',' kwarg_or_double_starred)*;
+
 starred_expression
     : '*' expression;
+
 kwarg_or_starred
     : NAME '=' expression
     | starred_expression;
+
 kwarg_or_double_starred
     : NAME '=' expression
     | '**' expression;
 
+// ASSIGNMENT TARGETS
+// ==================
+
+// Generic targets
+// ---------------
+
 // NOTE: star_targets may contain *bitwise_or, targets may not.
 star_targets
-    : star_target {isnot_(COMMA)}?
+    : star_target {isnotCurrentTokenType(COMMA)}?
     | star_target (',' star_target )* ','?;
+
 star_targets_list_seq: star_target (',' star_target)* ','?;
+
 star_targets_tuple_seq
     : star_target (',' star_target )+ ','?
     | star_target ',';
+
 star_target
-    : '*' ({isnot_(STAR)}? star_target)
+    : '*' ({isnotCurrentTokenType(STAR)}? star_target)
     | target_with_star_atom;
+
 target_with_star_atom
-    : t_primary '.' NAME {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '[' slices ']' {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    : t_primary '.' NAME {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '[' slices ']' {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
     | star_atom;
+
 star_atom
     : NAME
     | '(' target_with_star_atom ')'
@@ -627,31 +778,56 @@ single_target
     : single_subscript_attribute_target
     | NAME
     | '(' single_target ')';
+
 single_subscript_attribute_target
-    : t_primary '.' NAME {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '[' slices ']' {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?;
+    : t_primary '.' NAME {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '[' slices ']' {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?;
+
+t_primary
+    : t_primary '.' NAME {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '[' slices ']' {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary genexp {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '(' arguments? ')' {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | atom {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?;
+
+
+
+// Targets for del statements
+// --------------------------
 
 del_targets: del_target (',' del_target)* ','?;
+
 del_target
-    : t_primary '.' NAME {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '[' slices ']' {isnot_(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    : t_primary '.' NAME {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    | t_primary '[' slices ']' {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
     | del_t_atom;
+
 del_t_atom
     : NAME
     | '(' del_target ')'
     | '(' del_targets? ')'
     | '[' del_targets? ']';
 
-t_primary
-    : t_primary '.' NAME {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '[' slices ']' {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary genexp {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '(' arguments? ')' {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | atom {is_(OPEN_PAREN, OPEN_BRACK, DOT)}?;
+// TYPING ELEMENTS
+// ---------------
 
+// type_expressions allow */** but ignore them
+type_expressions
+    : expression (',' expression)* ',' '*' expression ',' '**' expression
+    | expression (',' expression)* ',' '*' expression
+    | expression (',' expression)* ',' '**' expression
+    | '*' expression ',' '**' expression
+    | '*' expression
+    | '**' expression
+    | expression (',' expression)*;
+
+func_type_comment
+    : NEWLINE TYPE_COMMENT {isTokenTypeSequence(NEWLINE, INDENT)}?   // Must be followed by indented block
+    | TYPE_COMMENT;
 
 // *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
-match_skw              : {isCurrentToken("match")}? NAME;
-case_skw               : {isCurrentToken("case")}? NAME;
-underscore_skw         : {isCurrentToken("_")}? NAME;
-name_except_underscore : {is_notCurrentToken("_")}? NAME;
+match_soft_kw     : {isCurrentTokenText("match")}? NAME;
+case_soft_kw      : {isCurrentTokenText("case")}? NAME;
+underscore_soft_kw: {isCurrentTokenText("_")}? NAME;
+
+// ========================= END OF THE GRAMMAR ===========================
