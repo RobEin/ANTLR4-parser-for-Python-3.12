@@ -122,7 +122,7 @@ global_stmt: 'global' NAME (',' NAME)*;
 nonlocal_stmt: 'nonlocal' NAME (',' NAME)*;
 
 del_stmt
-    : 'del' del_targets {isCurrentTokenType(';' | NEWLINE)}?;
+    : 'del' del_targets {isCurrentTokenType(SEMI, NEWLINE)}?;
 
 yield_stmt: yield_expr;
 
