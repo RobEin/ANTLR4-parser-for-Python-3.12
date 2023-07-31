@@ -1,8 +1,8 @@
-# ANTLR4 parser for Python 3.10.2 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# ANTLR4 parser for Python 3.11.4 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ### About files:
  - PythonParser.g4
-   is the ANTLR4 parser grammar that based on the official [Python PEG grammar](https://docs.python.org/3.10/reference/grammar.html).
+   is the ANTLR4 parser grammar that based on the official [Python PEG grammar](https://docs.python.org/3.11/reference/grammar.html).
 
  - PythonLexerBase.java
    handles the Python indentations.
@@ -24,8 +24,7 @@ grun Python file -tokens test.py
 
 
 ### Known issues:
-  - slow parser
-  - some probelems with the match statement (see [known_issues](https://github.com/RobEin/ANTLR4-Python-grammar-by-PEG/tree/main/known_issues) directory)
+  - slow parsing for longer codes
 
 
 ### Related links:
