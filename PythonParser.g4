@@ -122,7 +122,7 @@ global_stmt: 'global' NAME (',' NAME)*;
 nonlocal_stmt: 'nonlocal' NAME (',' NAME)*;
 
 del_stmt
-    : 'del' del_targets {isCurrentTokenType(';' | NEWLINE)}?;
+    : 'del' del_targets {isCurrentTokenType(SEMI, NEWLINE)}?;
 
 yield_stmt: yield_expr;
 
@@ -200,15 +200,15 @@ parameters
     | param_with_default+ star_etc?
     | star_etc;
 
-// Some duplication here because we can't write (',' | {isCurrentTokenType(CLOSE_PAREN)}?),
+// Some duplication here because we can't write (',' | {isCurrentTokenType(RPAR)}?),
 // which is because we don't support empty alternatives (yet).
 
 slash_no_default
     : param_no_default+ '/' ','
-    | param_no_default+ '/' {isCurrentTokenType(CLOSE_PAREN)}?;
+    | param_no_default+ '/' {isCurrentTokenType(RPAR)}?;
 slash_with_default
     : param_no_default* param_with_default+ '/' ','
-    | param_no_default* param_with_default+ '/' {isCurrentTokenType(CLOSE_PAREN)}?;
+    | param_no_default* param_with_default+ '/' {isCurrentTokenType(RPAR)}?;
 
 star_etc
     : '*' param_no_default param_maybe_default* kwds?
@@ -234,16 +234,16 @@ kwds
 
 param_no_default
     : param ',' TYPE_COMMENT?
-    | param TYPE_COMMENT? {isCurrentTokenType(CLOSE_PAREN)}?;
+    | param TYPE_COMMENT? {isCurrentTokenType(RPAR)}?;
 param_no_default_star_annotation
     : param_star_annotation ',' TYPE_COMMENT?
-    | param_star_annotation TYPE_COMMENT? {isCurrentTokenType(CLOSE_PAREN)}?;
+    | param_star_annotation TYPE_COMMENT? {isCurrentTokenType(RPAR)}?;
 param_with_default
     : param default_assignment ',' TYPE_COMMENT?
-    | param default_assignment TYPE_COMMENT? {isCurrentTokenType(CLOSE_PAREN)}?;
+    | param default_assignment TYPE_COMMENT? {isCurrentTokenType(RPAR)}?;
 param_maybe_default
     : param default_assignment? ',' TYPE_COMMENT?
-    | param default_assignment? TYPE_COMMENT? {isCurrentTokenType(CLOSE_PAREN)}?;
+    | param default_assignment? TYPE_COMMENT? {isCurrentTokenType(RPAR)}?;
 param: NAME annotation?;
 param_star_annotation: NAME star_annotation;
 annotation: ':' expression;
@@ -285,7 +285,7 @@ with_stmt
     | ASYNC 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block;
 
 with_item
-    : expression 'as' star_target {isCurrentTokenType(COMMA, CLOSE_PAREN, COLON)}?
+    : expression 'as' star_target {isCurrentTokenType(COMMA, RPAR, COLON)}?
     | expression;
 
 // Try statement
@@ -387,13 +387,13 @@ capture_pattern
     : pattern_capture_target;
 
 pattern_capture_target
-    : {isnotCurrentTokenText("_")}? NAME {isnotCurrentTokenType(DOT, OPEN_PAREN, EQUAL)}?;
+    : {isnotCurrentTokenText("_")}? NAME {isnotCurrentTokenType(DOT, LPAR, EQUAL)}?;
 
 wildcard_pattern
     : underscore_soft_kw;
 
 value_pattern
-    : attr {isnotCurrentTokenType(DOT, OPEN_PAREN, EQUAL)}?;
+    : attr {isnotCurrentTokenType(DOT, LPAR, EQUAL)}?;
 
 attr
     : NAME ('.' NAME)+;
@@ -720,7 +720,7 @@ dictcomp
 // =======================
 
 arguments
-    : args ','? {isCurrentTokenType(CLOSE_PAREN)}?;
+    : args ','? {isCurrentTokenType(RPAR)}?;
 
 args
     : (starred_expression | ( assignment_expression | expression {isnotCurrentTokenType(COLONEQUAL)}?) {isnotCurrentTokenType(EQUAL)}?) (',' (starred_expression | ( assignment_expression | expression {isnotCurrentTokenType(COLONEQUAL)}?) {isnotCurrentTokenType(EQUAL)}?))* (',' kwargs )?
@@ -764,8 +764,8 @@ star_target
     | target_with_star_atom;
 
 target_with_star_atom
-    : t_primary '.' NAME {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '[' slices ']' {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    : t_primary '.' NAME {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
+    | t_primary '[' slices ']' {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
     | star_atom;
 
 star_atom
@@ -780,15 +780,15 @@ single_target
     | '(' single_target ')';
 
 single_subscript_attribute_target
-    : t_primary '.' NAME {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '[' slices ']' {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?;
+    : t_primary '.' NAME {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
+    | t_primary '[' slices ']' {isnotCurrentTokenType(LPAR, LSQB, DOT)}?;
 
 t_primary
-    : t_primary '.' NAME {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '[' slices ']' {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary genexp {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '(' arguments? ')' {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | atom {isCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?;
+    : t_primary '.' NAME {isCurrentTokenType(LPAR, LSQB, DOT)}?
+    | t_primary '[' slices ']' {isCurrentTokenType(LPAR, LSQB, DOT)}?
+    | t_primary genexp {isCurrentTokenType(LPAR, LSQB, DOT)}?
+    | t_primary '(' arguments? ')' {isCurrentTokenType(LPAR, LSQB, DOT)}?
+    | atom {isCurrentTokenType(LPAR, LSQB, DOT)}?;
 
 
 
@@ -798,8 +798,8 @@ t_primary
 del_targets: del_target (',' del_target)* ','?;
 
 del_target
-    : t_primary '.' NAME {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
-    | t_primary '[' slices ']' {isnotCurrentTokenType(OPEN_PAREN, OPEN_BRACK, DOT)}?
+    : t_primary '.' NAME {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
+    | t_primary '[' slices ']' {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
     | del_t_atom;
 
 del_t_atom
@@ -826,8 +826,8 @@ func_type_comment
     | TYPE_COMMENT;
 
 // *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
-match_soft_kw     : {isCurrentTokenText("match")}? NAME;
-case_soft_kw      : {isCurrentTokenText("case")}? NAME;
+match_soft_kw:      {isCurrentTokenText("match")}? NAME;
+case_soft_kw:       {isCurrentTokenText("case")}? NAME;
 underscore_soft_kw: {isCurrentTokenText("_")}? NAME;
 
 // ========================= END OF THE GRAMMAR ===========================

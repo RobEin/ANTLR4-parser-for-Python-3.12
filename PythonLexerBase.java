@@ -34,12 +34,12 @@ lexer grammar PythonLexer;
 options { superClass=PythonLexerBase; }
 tokens { INDENT, DEDENT }
 
-OPEN_PAREN   : '(';
-OPEN_BRACK   : '[';
-OPEN_BRACE   : '{';
-CLOSE_PAREN  : ')';
-CLOSE_BRACK  : ']';
-CLOSE_BRACE  : '}';
+LPAR   : '(';
+LSQB   : '[';
+LBRACE : '{';
+RPAR   : ')';
+RSQB   : ']';
+RBRACE : '}';
 TYPE_COMMENT : '#' WS? 'type:' WS? ~[\r\n\f]*;
 NEWLINE      : OS_INDEPENDENT_NL;
 COMMENT      : '#' ~[\r\n\f]* -> channel(HIDDEN);
@@ -97,15 +97,15 @@ public abstract class PythonLexerBase extends Lexer {
             setCurrentAndFollowingTokens();
             handleStartOfInput();
             switch (_curToken.getType()) { // Java 8 switch
-                case PythonLexer.OPEN_PAREN:
-                case PythonLexer.OPEN_BRACK:
-                case PythonLexer.OPEN_BRACE:
+                case PythonLexer.LPAR:   // OPEN_PAREN
+                case PythonLexer.LSQB:   // OPEN_BRACK
+                case PythonLexer.LBRACE: // OPEN_BRACE
                     _opened++;
                     addPendingToken(_curToken);
                     break;
-                case PythonLexer.CLOSE_PAREN:
-                case PythonLexer.CLOSE_BRACK:
-                case PythonLexer.CLOSE_BRACE:
+                case PythonLexer.RPAR:   // CLOSE_PAREN
+                case PythonLexer.RSQB:   // CLOSE_BRACK
+                case PythonLexer.RBRACE: // CLOSE_BRACE
                     _opened--;
                     addPendingToken(_curToken);
                     break;

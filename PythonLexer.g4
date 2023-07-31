@@ -70,12 +70,12 @@ IF       : 'if';
 OR       : 'or';
 YIELD    : 'yield';
 
-OPEN_PAREN       : '(';  // LPAR
-OPEN_BRACK       : '[';  // LSQB
-OPEN_BRACE       : '{';  // LBRACE
-CLOSE_PAREN      : ')';  // RPAR
-CLOSE_BRACK      : ']';  // RSQB
-CLOSE_BRACE      : '}';  // RBRACE
+LPAR             : '(';  // OPEN_PAREN
+LSQB             : '[';  // OPEN_BRACK
+LBRACE           : '{';  // OPEN_BRACE
+RPAR             : ')';  // CLOSE_PAREN
+RSQB             : ']';  // CLOSE_BRACK
+RBRACE           : '}';  // CLOSE_BRACE
 DOT              : '.';
 COLON            : ':';
 COMMA            : ',';
@@ -117,6 +117,7 @@ ATEQUAL          : '@=';
 RARROW           : '->';
 ELLIPSIS         : '...';
 COLONEQUAL       : ':=';
+EXCLAMATION      : '!';
 
 NAME
     : ID_START ID_CONTINUE*
