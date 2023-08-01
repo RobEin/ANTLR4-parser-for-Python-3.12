@@ -39,4 +39,4 @@ grun Python file -tokens test.py
 
 [cpython](https://github.com/python/cpython)
 
-[ANTLR4 parser for Python 3.8.12](https://github.com/RobEin/ANTLR4-parser-for-Python-3.8.12)
+[ANTLR4 parser for Python 3](https://github.com/RobEin/ANTLR4-parser-for-Python-3.8/tree/main)
