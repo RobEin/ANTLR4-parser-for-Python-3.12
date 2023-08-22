@@ -75,7 +75,7 @@ class PythonLexerBase(Lexer):
         self._curToken = None # current (under processing) token
         self._ffgToken = None # following (look ahead) token
 
-    def nextToken(self): # reading of the input stream until a return EOF
+    def nextToken(self) -> Token: # reading of the input stream until a return EOF
         if self._input.size == 0:
             return CommonToken(Token.EOF, "<EOF>")
         else:
@@ -224,7 +224,7 @@ class PythonLexerBase(Lexer):
     ##  the replacement is a multiple of eight [...]"
     ##
     ##  -- https://docs.python.org/3/reference/lexical_analysis.html#indentation
-    def getIndentationLength(self, whiteSpaces: str):
+    def getIndentationLength(self, whiteSpaces: str) -> int:
         TAB_LENGTH = 8 # the standard number of spaces to replace a tab to spaces
         length = 0
         for i in range(len(whiteSpaces)):
