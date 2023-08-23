@@ -1,25 +1,4 @@
 /*
-The MIT License (MIT)
-Copyright (c) 2021 Robert Einhorn
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
- */
-
-/*
  * Project      : a helper class to implement specific PEG grammar expressions in an ANTLR4 grammar
  *
  * Developed by : Robert Einhorn
@@ -32,13 +11,16 @@ THE SOFTWARE.
 // https://peps.python.org/pep-0617/#e-4
 
 import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 
 public abstract class PythonParserBase extends Parser {
+    private boolean _isMatchedEOF = false;
+
     protected PythonParserBase(TokenStream input) {
         super(input);
-        //this.removeErrorListeners();
-        this.addErrorListener(new IndentationErrorListener());
+        //removeErrorListeners();
+        addErrorListener(new IndentationErrorListener());
     }
 
 
@@ -91,7 +73,9 @@ public abstract class PythonParserBase extends Parser {
     @Override
     public void exitRule() {
         super.exitRule();
-        if (isMatchedEOF()) {
+//      if (isMatchedEOF()) { // implemented in Java ANTLR4 runtime but not implemented in Python ANTLR4 runtime (see: PythonParserBase.py)
+        if (getCurrentToken().getType() == Token.EOF && _isMatchedEOF == false) {
+            _isMatchedEOF = true;
             IndentationErrorListener.displayErrors();
         }
     }
