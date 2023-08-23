@@ -135,7 +135,7 @@ STRING
     ;
 
 TYPE_COMMENT
-    : '#' WS? 'type:' WS? ~[\r\n\f]*
+    : '#' WS? 'type:' ~[\r\n\f]*
     ;
 
 NEWLINE
