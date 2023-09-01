@@ -17,33 +17,9 @@
 ##OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ##THE SOFTWARE.
 
-
 ## Project      : Python Indent/Dedent handler for ANTLR4 grammars
 ##
 ## Developed by : Robert Einhorn
-
-
-
-# *** lexer grammar dependencies to use this class with other (older) ANTLR4 Python grammars
-
-##lexer grammar PythonLexer;
-##options { superClass=PythonLexerBase; }
-##tokens { INDENT, DEDENT }
-##
-##LPAR   : '(';
-##LSQB   : '[';
-##LBRACE : '{';
-##RPAR   : ')';
-##RSQB   : ']';
-##RBRACE : '}';
-##TYPE_COMMENT : '#' WS? 'type:' WS? ~[\r\n\f]*;
-##NEWLINE      : OS_INDEPENDENT_NL;
-##COMMENT      : '#' ~[\r\n\f]* -> channel(HIDDEN);
-##WS           : [ \t]+         -> channel(HIDDEN);
-##LINE_JOINING : '\\' NEWLINE   -> channel(HIDDEN);
-##
-##fragment OS_INDEPENDENT_NL : '\r'? '\n';
-
 
 from collections import deque
 from typing import TextIO
@@ -51,6 +27,7 @@ from antlr4 import InputStream, Lexer, Token
 from antlr4.Token import CommonToken
 from IndentationErrorListener import IndentationErrorListener
 import sys
+import re
 
 class PythonLexerBase(Lexer):
     def __init__(self, input: InputStream, output: TextIO = sys.stdout):
@@ -75,7 +52,7 @@ class PythonLexerBase(Lexer):
         self._curToken = None # current (under processing) token
         self._ffgToken = None # following (look ahead) token
 
-    def nextToken(self) -> Token: # reading of the input stream until a return EOF
+    def nextToken(self) -> CommonToken: # reading the input stream until a return EOF
         if self._input.size == 0:
             return CommonToken(Token.EOF, "<EOF>")
         else:
@@ -95,13 +72,15 @@ class PythonLexerBase(Lexer):
                     self.addPendingToken(self._curToken)
                 case self.NEWLINE:
                     self.handleNEWLINEtoken()
+                case self.STRING:
+                    self.handleSTRINGtoken();
                 case Token.EOF:
                     self.handleEOFtoken()
                 case other:
                     self.addPendingToken(self._curToken)
 
     def setCurrentAndFollowingTokens(self):
-        self._curToken = self._ffgToken if self._ffgToken is not None else super().nextToken()
+        self._curToken = super().nextToken() if self._ffgToken is None else self._ffgToken
         self._ffgToken = self._curToken if self._curToken.type == Token.EOF else super().nextToken()
 
     ## initialize the _indentLengths stack
@@ -113,7 +92,7 @@ class PythonLexerBase(Lexer):
             # initialize the stack with a default 0 indentation length
             self._indentLengths.append(0) # this will never be popped off
             while self._curToken.type != Token.EOF:
-                if self._curToken.channel == Lexer.DEFAULT_TOKEN_CHANNEL:
+                if self._curToken.channel == Token.DEFAULT_CHANNEL:
                     if self._curToken.type == self.NEWLINE:
                         # all the NEWLINE tokens must be ignored before the first statement
                         self.hideAndAddPendingToken(self._curToken)
@@ -121,14 +100,14 @@ class PythonLexerBase(Lexer):
                         self.insertLeadingIndentToken()
                         return # continue the processing of the current token with checkNextToken()
                 else:
-                    self.addPendingToken(self._curToken) # it can be WS, LINE_JOINING or COMMENT token
+                    self.addPendingToken(self._curToken) # it can be WS, EXPLICIT_LINE_JOINING or COMMENT token
                 self.setCurrentAndFollowingTokens()
             # continue the processing of the EOF token with checkNextToken()
 
     def insertLeadingIndentToken(self):
         if self._previousPendingTokenType == self.WS: # there is an "indentation" before the first statement
             # insert an INDENT token before the first statement to raise an 'unexpected indent' error later by the parser
-            self.createAndInsertPendingToken(self.INDENT, self._curToken) # insert an INDENT token before the _curToken
+            self.createAndAddPendingToken(self.INDENT, self._curToken) # insert an INDENT token before the _curToken
 
     def handleNEWLINEtoken(self):
         if self._opened > 0: # *** https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining
@@ -144,12 +123,12 @@ class PythonLexerBase(Lexer):
                     # We're before a blank line or a comment or a type comment
                     self.hideAndAddPendingToken(nlToken)     # ignore the NEWLINE token
                     if isLookingAhead:
-                        self.addPendingToken(self._curToken) # add the current WS token to the token stream
+                        self.addPendingToken(self._curToken) # WS token
                 case other:
-                    self.addPendingToken(nlToken)            # add the NEWLINE token to the token stream
+                    self.addPendingToken(nlToken)
                     if isLookingAhead: # We're on a whitespace(s) followed by a statement
-                        self.addPendingToken(self._curToken) # add the current WS token to the token stream
-                        indentationLength = 0 if self._ffgToken.type == Token.EOF else self.getIndentationLength(self._curToken.text)
+                        self.addPendingToken(self._curToken) # WS token
+                        indentationLength = 0 if self._ffgToken.type == Token.EOF else self.getCurrentIndentationLength()
                         self.insertIndentOrDedentToken(indentationLength) # may insert INDENT token or DEDENT token(s)
                     else: # We're before a statement (there is no whitespace before the statement)
                         self.insertIndentOrDedentToken(0) # may insert DEDENT token(s)
@@ -158,22 +137,35 @@ class PythonLexerBase(Lexer):
         # *** https://docs.python.org/3/reference/lexical_analysis.html#indentation
         prevIndentLength: int = self._indentLengths[0] # never has null value
         if curIndentLength > prevIndentLength:
-            self.createAndInsertPendingToken(self.INDENT, self._ffgToken) # insert an INDENT token before the _ffgToken
+            self.createAndAddPendingToken(self.INDENT, self._ffgToken) # insert an INDENT token before the _ffgToken
             self._indentLengths.appendleft(curIndentLength)
         else:
             while curIndentLength < prevIndentLength: # more than 1 DEDENT token may be inserted to the token stream
                 self._indentLengths.popleft()
                 prevIndentLength = self._indentLengths[0]
-                self.createAndInsertPendingToken(self.DEDENT, self._ffgToken) # insert a DEDENT token before the _ffgToken
+                self.createAndAddPendingToken(self.DEDENT, self._ffgToken) # insert a DEDENT token before the _ffgToken
                 if curIndentLength > prevIndentLength:
-                    IndentationErrorListener.lexerError(" line " + str(self._ffgToken.line)
-                                                      + ": \t unindent does not match any outer indentation level")
+                    pass
+##                    IndentationErrorListener.lexerError(" line " + str(self._ffgToken.line)
+##                                                      + ": \t unindent does not match any outer indentation level")
+
+    def handleSTRINGtoken(self): # remove the \<newline> escape sequences from the string literal
+        # https://docs.python.org/3.11/reference/lexical_analysis.html#string-and-bytes-literals
+        line_joinFreeStringLiteral = re.sub("\\\\\\r?\\n", "", self._curToken.text)
+        if len(self._curToken.text) == len(line_joinFreeStringLiteral):
+            self.addPendingToken(self._curToken)
+        else:
+            originalSTRINGtoken = self._curToken.clone() # backup the original token
+            self._curToken.text = line_joinFreeStringLiteral
+            self.addPendingToken(self._curToken)             # add the modified token with inline string literal
+            self.hideAndAddPendingToken(originalSTRINGtoken) # add the original token with hidden channel
+            # this hidden token allows to restore the original string literal with the \<newline> escape sequences
 
     def handleEOFtoken(self):
         if self._lastPendingTokenTypeForDefaultChannel > 0: # there was statement in the input (leading NEWLINE tokens are hidden)
             self.insertTrailingTokens()
             self.checkSpaceAndTabIndentation()
-        self.addPendingToken(self._curToken) # add the current EOF token to the token stream
+        self.addPendingToken(self._curToken) # EOF token
 
     def insertTrailingTokens(self):
         match self._lastPendingTokenTypeForDefaultChannel:
@@ -181,38 +173,29 @@ class PythonLexerBase(Lexer):
                 pass # no trailing NEWLINE token is needed
             case other:
                 # insert an extra trailing NEWLINE token that serves as the end of the last statement
-                self.createAndInsertPendingToken(self.NEWLINE, self._ffgToken) # insert before the _ffgToken
+                self.createAndAddPendingToken(self.NEWLINE, self._ffgToken) # insert before the _ffgToken
         self.insertIndentOrDedentToken(0) # Now insert as much trailing DEDENT tokens as needed
 
-    def hideAndAddPendingToken(self, token: Token):
-        # create a hidden copy of the token and add it to the pending tokens
-        self.createAndAddPendingToken(token.source
-                                    , token.start, token.stop
-                                    , token.text, token.type, Lexer.HIDDEN
-                                    , token.line, token.column)
-
-    def createAndInsertPendingToken(self, type: int, followingToken: Token): # insert a token before the followingToken
-        self.createAndAddPendingToken(followingToken.source
-                                    , followingToken.start, followingToken.start - 1
-                                    , "<" + self.symbolicNames[type] + ">", type
-                                    , Lexer.DEFAULT_TOKEN_CHANNEL
-                                    , followingToken.line, followingToken.column)
-
-    def createAndAddPendingToken(self, source: tuple
-                               , startIndex: int, stopIndex: int
-                               , text: str, type: int, channel: int
-                               , line: int, column: int):
-
-        token = CommonToken(source, type, channel, startIndex, stopIndex)
-        token.text = text
-        token.line = line
-        token.column = column
+    def hideAndAddPendingToken(self, token: CommonToken):
+        token.channel = Token.HIDDEN_CHANNEL # channel=1
         self.addPendingToken(token)
 
-    def addPendingToken(self, token: Token):
+    def createAndAddPendingToken(self, type: int, followingToken: CommonToken): # insert a token before the followingToken
+        token = CommonToken(followingToken.source
+                          , type
+                          , Token.DEFAULT_CHANNEL
+                          , followingToken.start
+                          , followingToken.start - 1)
+
+        token.text = "<" + self.symbolicNames[type] + ">"
+        token.line = followingToken.line
+        token.column = followingToken.column
+        self.addPendingToken(token)
+
+    def addPendingToken(self, token: CommonToken):
         # save the last pending token type because the _pendingTokens list can be empty by the nextToken()
         self._previousPendingTokenType = token.type
-        if token.channel == Lexer.DEFAULT_TOKEN_CHANNEL:
+        if token.channel == Token.DEFAULT_CHANNEL:
             self._lastPendingTokenTypeForDefaultChannel = self._previousPendingTokenType
         self._pendingTokens.append(token) # the token will be added to the token stream
 
@@ -224,7 +207,8 @@ class PythonLexerBase(Lexer):
     ##  the replacement is a multiple of eight [...]"
     ##
     ##  -- https://docs.python.org/3/reference/lexical_analysis.html#indentation
-    def getIndentationLength(self, whiteSpaces: str) -> int:
+    def getCurrentIndentationLength(self) -> int:
+        whiteSpaces = self._curToken.text
         TAB_LENGTH = 8 # the standard number of spaces to replace a tab to spaces
         length = 0
         for i in range(len(whiteSpaces)):
@@ -238,5 +222,6 @@ class PythonLexerBase(Lexer):
 
     def checkSpaceAndTabIndentation(self):
         if self._wasSpaceIndentation and self._lastLineOfTabbedIndentation > 0:
-            IndentationErrorListener.lexerError(" line " + str(self._lastLineOfTabbedIndentation)
-                                              + ":\t inconsistent use of tabs and spaces in indentation")
+            pass
+##            IndentationErrorListener.lexerError(" line " + str(self._lastLineOfTabbedIndentation)
+##                                              + ":\t inconsistent use of tabs and spaces in indentation")

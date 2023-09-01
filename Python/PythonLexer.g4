@@ -23,17 +23,18 @@ THE SOFTWARE.
  /*
   * Project      : an ANTLR4 lexer grammar for Python 3
   *                https://github.com/RobEin/ANTLR4-Python-grammar-by-PEG
-  * Developed by : Robert Einhorn
+  * Developed by : Bart Kiers, Robert Einhorn
   */
 
 lexer grammar PythonLexer;
 options { superClass=PythonLexerBase; }
-tokens { INDENT, DEDENT }
+tokens { INDENT, DEDENT } // https://docs.python.org/3/reference/lexical_analysis.html#indentation
 
 /*
  * lexer rules    // https://docs.python.org/3/reference/lexical_analysis.html
  */
 
+// https://docs.python.org/3/reference/lexical_analysis.html#keywords
 FALSE    : 'False';
 AWAIT    : 'await';
 ELSE     : 'else';
@@ -70,6 +71,7 @@ IF       : 'if';
 OR       : 'or';
 YIELD    : 'yield';
 
+// https://docs.python.org/3/library/token.html#token.OP
 LPAR             : '(';  // OPEN_PAREN
 LSQB             : '[';  // OPEN_BRACK
 LBRACE           : '{';  // OPEN_BRACE
@@ -117,23 +119,27 @@ ATEQUAL          : '@=';
 RARROW           : '->';
 ELLIPSIS         : '...';
 COLONEQUAL       : ':=';
-EXCLAMATION      : '!'; // not used
+EXCLAMATION      : '!';  // not used
 
+// https://docs.python.org/3/reference/lexical_analysis.html#identifiers
 NAME
     : ID_START ID_CONTINUE*
     ;
 
+// https://docs.python.org/3/reference/lexical_analysis.html#numeric-literals
 NUMBER
     : INTEGER
     | FLOAT_NUMBER
     | IMAG_NUMBER
     ;
 
+// https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals
 STRING
     : STRING_LITERAL
     | BYTES_LITERAL
     ;
 
+// https://peps.python.org/pep-0484/#type-comments
 TYPE_COMMENT
     : '#' WS? 'type:' ~[\r\n\f]*
     ;
@@ -142,29 +148,47 @@ NEWLINE
     : OS_INDEPENDENT_NL
     ;
 
-COMMENT      : '#' ~[\r\n\f]* -> channel(HIDDEN);
-WS           : [ \t]+         -> channel(HIDDEN);
-LINE_JOINING : '\\' NEWLINE   -> channel(HIDDEN);
+// https://docs.python.org/3/reference/lexical_analysis.html#comments
+COMMENT : '#' ~[\r\n\f]*             -> channel(HIDDEN);
+
+// https://docs.python.org/3/reference/lexical_analysis.html#whitespace-between-tokens
+WS : [ \t]+                          -> channel(HIDDEN);
+
+// https://docs.python.org/3/reference/lexical_analysis.html#explicit-line-joining
+EXPLICIT_LINE_JOINING : '\\' NEWLINE -> channel(HIDDEN);
+
 
 /*
  * fragments
  */
 
+// https://docs.python.org/3/reference/lexical_analysis.html#literals
+
+// https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals
 fragment STRING_LITERAL : STRING_PREFIX? (SHORT_STRING | LONG_STRING);
 fragment STRING_PREFIX  : 'r' | 'u' | 'R' | 'U' | 'f' | 'F' | 'fr' | 'Fr' | 'fR' | 'FR' | 'rf' | 'rF' | 'Rf' | 'RF';
-fragment SHORT_STRING   : '\'' SHORT_STRING_ITEM_FOR_SINGLE_QUOTE* '\'' | '"' SHORT_STRING_ITEM_FOR_DOUBLE_QUOTE* '"';
-fragment LONG_STRING    : '\'\'\'' LONG_STRING_ITEM*? '\'\'\'' | '"""' LONG_STRING_ITEM*? '"""';
+fragment SHORT_STRING
+   : '\'' SHORT_STRING_ITEM_FOR_SINGLE_QUOTE* '\''
+   | '"'  SHORT_STRING_ITEM_FOR_DOUBLE_QUOTE* '"'
+   ;
+
+fragment LONG_STRING
+   : '\'\'\'' LONG_STRING_ITEM*? '\'\'\''
+   | '"""'    LONG_STRING_ITEM*? '"""'
+   ;
 
 fragment SHORT_STRING_ITEM_FOR_SINGLE_QUOTE : SHORT_STRING_CHAR_NO_SINGLE_QUOTE | STRING_ESCAPE_SEQ;
 fragment SHORT_STRING_ITEM_FOR_DOUBLE_QUOTE : SHORT_STRING_CHAR_NO_DOUBLE_QUOTE | STRING_ESCAPE_SEQ;
 
 fragment LONG_STRING_ITEM : LONG_STRING_CHAR | STRING_ESCAPE_SEQ;
 
-fragment SHORT_STRING_CHAR_NO_SINGLE_QUOTE : ~[\\\r\n'];       // <any source character except "\" or newline or singel quote>
+fragment SHORT_STRING_CHAR_NO_SINGLE_QUOTE : ~[\\\r\n'];       // <any source character except "\" or newline or single quote>
 fragment SHORT_STRING_CHAR_NO_DOUBLE_QUOTE : ~[\\\r\n"];       // <any source character except "\" or newline or double quote>
 
 fragment LONG_STRING_CHAR  : ~'\\';                            // <any source character except "\">
 fragment STRING_ESCAPE_SEQ : '\\' (OS_INDEPENDENT_NL | .);     // <any source character>
+// the OS_INDEPENDENT_NL refers the \<newline> (not \n) escape sequence
+// it will be removed from the string literals by the PythonLexerBase class
 
 fragment BYTES_LITERAL : BYTES_PREFIX(SHORT_BYTES | LONG_BYTES);
 fragment BYTES_PREFIX  : 'b' | 'B' | 'br' | 'Br' | 'bR' | 'BR' | 'rb' | 'rB' | 'Rb' | 'RB';
@@ -195,6 +219,7 @@ fragment SHORT_BYTES_CHAR_NO_DOUBLE_QUOTE                      // <any ASCII cha
 fragment LONG_BYTES_CHAR  : [\u0000-\u005B] | [\u005D-\u007F]; // <any ASCII character except "\">
 fragment BYTES_ESCAPE_SEQ : '\\' [\u0000-\u007F];              // "\" <any ASCII character>
 
+// https://docs.python.org/3/reference/lexical_analysis.html#integer-literals
 fragment INTEGER        : DEC_INTEGER | BIN_INTEGER | OCT_INTEGER | HEX_INTEGER;
 fragment DEC_INTEGER    : NON_ZERO_DIGIT ('_'? DIGIT)* | '0'+ ('_'? '0')*;
 fragment BIN_INTEGER    : '0' ('b' | 'B') ('_'? BIN_DIGIT)+;
@@ -206,6 +231,7 @@ fragment BIN_DIGIT      : '0' | '1';
 fragment OCT_DIGIT      : [0-7];
 fragment HEX_DIGIT      : DIGIT | [a-f] | [A-F];
 
+// https://docs.python.org/3/reference/lexical_analysis.html#floating-point-literals
 fragment FLOAT_NUMBER   : POINT_FLOAT | EXPONENT_FLOAT;
 fragment POINT_FLOAT    : DIGIT_PART? FRACTION | DIGIT_PART '.';
 fragment EXPONENT_FLOAT : (DIGIT_PART | POINT_FLOAT) EXPONENT;
@@ -213,8 +239,10 @@ fragment DIGIT_PART     : DIGIT ('_'? DIGIT)*;
 fragment FRACTION       : '.' DIGIT_PART;
 fragment EXPONENT       : ('e' | 'E') ('+' | '-')? DIGIT_PART;
 
+// https://docs.python.org/3/reference/lexical_analysis.html#imaginary-literals
 fragment IMAG_NUMBER : (FLOAT_NUMBER | DIGIT_PART) ('j' | 'J');
 
+// https://docs.python.org/3/reference/lexical_analysis.html#physical-lines
 fragment OS_INDEPENDENT_NL : '\r'? '\n'; // Unix, Windows
 
 fragment ID_CONTINUE // based on: https://github.com/asmeurer/python-unicode-variable-names
