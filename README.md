@@ -25,4 +25,4 @@
 
 [ANTLR4 parser for Python 2.7.18](https://github.com/RobEin/ANTLR4-parser-for-Python-2.7.18)
 
-[ANTLR4 parser for Python 3.8.12](https://github.com/RobEin/ANTLR4-parser-for-Python-3.8.12)
+[ANTLR4 parser for Python 3.8](https://github.com/RobEin/ANTLR4-parser-for-Python-3.8.12)
