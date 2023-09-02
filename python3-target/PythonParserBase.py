@@ -43,5 +43,7 @@ class PythonParserBase(Parser):
 
     def exitRule(self):
         super().exitRule()
-        if self.getCurrentToken().type == Token.EOF and self._isMatchedEOF == False:
+        if self.getCurrentToken().type == Token.EOF and
+           self._isMatchedEOF == False:
+
             self._isMatchedEOF = True
