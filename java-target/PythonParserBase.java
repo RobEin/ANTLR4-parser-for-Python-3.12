@@ -14,8 +14,6 @@ import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 
 public abstract class PythonParserBase extends Parser {
     private boolean _isMatchedEOF = false;
@@ -77,8 +75,6 @@ public abstract class PythonParserBase extends Parser {
 //      if (isMatchedEOF()) { // implemented in Java ANTLR4 runtime but not implemented in Python ANTLR4 runtime (see: PythonParserBase.py)
         if (getCurrentToken().getType() == Token.EOF && _isMatchedEOF == false) {
             _isMatchedEOF = true;
-            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
-            IndentationErrorListener.displayErrors();
         }
     }
 }
