@@ -27,7 +27,7 @@ THE SOFTWARE.
   */
 
 parser grammar PythonParser; // Python 3.11.4    https://docs.python.org/3.11/reference/grammar.html
-options { tokenVocab=PythonLexer; }
+options { tokenVocab=PythonLexer; superClass=PythonParserBase; }
 
 // STARTING RULES
 // ==============
@@ -52,8 +52,7 @@ statement_newline
     | EOF;
 
 simple_stmts
-    : simple_stmt {isnotCurrentTokenType(SEMI)}? NEWLINE  // Not needed, there for speedup
-    | simple_stmt (';' simple_stmt)* ';'? NEWLINE;
+    : simple_stmt (';' simple_stmt)* ';'? NEWLINE;
 
 // NOTE: assignment MUST precede expression, else parsing a simple assignment
 // will throw a SyntaxError.
@@ -90,7 +89,7 @@ assignment
     : NAME ':' expression ('=' annotated_rhs )?
     | ('(' single_target ')'
          | single_subscript_attribute_target) ':' expression ('=' annotated_rhs )?
-    | (star_targets '=' )+ (yield_expr | star_expressions) {isnotCurrentTokenType(EQUAL)}? TYPE_COMMENT?
+    | (star_targets '=' )+ (yield_expr | star_expressions) TYPE_COMMENT?
     | single_target augassign (yield_expr | star_expressions);
 
 annotated_rhs: yield_expr | star_expressions;
@@ -122,7 +121,7 @@ global_stmt: 'global' NAME (',' NAME)*;
 nonlocal_stmt: 'nonlocal' NAME (',' NAME)*;
 
 del_stmt
-    : 'del' del_targets {isCurrentTokenType(SEMI, NEWLINE)}?;
+    : 'del' del_targets;
 
 yield_stmt: yield_expr;
 
@@ -140,7 +139,7 @@ import_from
     | 'from' ('.' | '...')+ 'import' import_from_targets;
 import_from_targets
     : '(' import_from_as_names ','? ')'
-    | import_from_as_names {isnotCurrentTokenType(COMMA)}?
+    | import_from_as_names
     | '*';
 import_from_as_names
     : import_from_as_name (',' import_from_as_name)*;
@@ -205,10 +204,10 @@ parameters
 
 slash_no_default
     : param_no_default+ '/' ','
-    | param_no_default+ '/' {isCurrentTokenType(RPAR)}?;
+    | param_no_default+ '/';
 slash_with_default
     : param_no_default* param_with_default+ '/' ','
-    | param_no_default* param_with_default+ '/' {isCurrentTokenType(RPAR)}?;
+    | param_no_default* param_with_default+ '/';
 
 star_etc
     : '*' param_no_default param_maybe_default* kwds?
@@ -234,16 +233,16 @@ kwds
 
 param_no_default
     : param ',' TYPE_COMMENT?
-    | param TYPE_COMMENT? {isCurrentTokenType(RPAR)}?;
+    | param TYPE_COMMENT?;
 param_no_default_star_annotation
     : param_star_annotation ',' TYPE_COMMENT?
-    | param_star_annotation TYPE_COMMENT? {isCurrentTokenType(RPAR)}?;
+    | param_star_annotation TYPE_COMMENT?;
 param_with_default
     : param default_assignment ',' TYPE_COMMENT?
-    | param default_assignment TYPE_COMMENT? {isCurrentTokenType(RPAR)}?;
+    | param default_assignment TYPE_COMMENT?;
 param_maybe_default
     : param default_assignment? ',' TYPE_COMMENT?
-    | param default_assignment? TYPE_COMMENT? {isCurrentTokenType(RPAR)}?;
+    | param default_assignment? TYPE_COMMENT?;
 param: NAME annotation?;
 param_star_annotation: NAME star_annotation;
 annotation: ':' expression;
@@ -285,7 +284,7 @@ with_stmt
     | ASYNC 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block;
 
 with_item
-    : expression 'as' star_target {isCurrentTokenType(COMMA, RPAR, COLON)}?
+    : expression 'as' star_target
     | expression;
 
 // Try statement
@@ -349,7 +348,7 @@ closed_pattern
 
 // Literal patterns are used for equality and identity constraints
 literal_pattern
-    : signed_number {isnotCurrentTokenType(PLUS, MINUS)}?
+    : signed_number
     | complex_number
     | strings
     | 'None'
@@ -358,7 +357,7 @@ literal_pattern
 
 // Literal expressions are used to restrict permitted mapping pattern keys
 literal_expr
-    : signed_number {isnotCurrentTokenType(PLUS, MINUS)}?
+    : signed_number
     | complex_number
     | strings
     | 'None'
@@ -387,13 +386,13 @@ capture_pattern
     : pattern_capture_target;
 
 pattern_capture_target
-    : {isnotCurrentTokenText("_")}? NAME {isnotCurrentTokenType(DOT, LPAR, EQUAL)}?;
+    : NAME;
 
 wildcard_pattern
     : underscore_soft_kw;
 
 value_pattern
-    : attr {isnotCurrentTokenType(DOT, LPAR, EQUAL)}?;
+    : attr;
 
 attr
     : NAME ('.' NAME)+;
@@ -490,7 +489,7 @@ assignment_expression
 
 named_expression
     : assignment_expression
-    | expression {isnotCurrentTokenType(COLONEQUAL)}?;
+    | expression;
 
 disjunction
     : conjunction ('or' conjunction )+
@@ -598,7 +597,7 @@ primary
     | atom;
 
 slices
-    : slice {isnotCurrentTokenType(COMMA)}?
+    : slice
     | (slice | starred_expression) (',' (slice | starred_expression))* ','?;
 
 slice
@@ -642,11 +641,11 @@ lambda_parameters
 
 lambda_slash_no_default
     : lambda_param_no_default+ '/' ','
-    | lambda_param_no_default+ '/' {isCurrentTokenType(COLON)}?;
+    | lambda_param_no_default+ '/';
 
 lambda_slash_with_default
     : lambda_param_no_default* lambda_param_with_default+ '/' ','
-    | lambda_param_no_default* lambda_param_with_default+ '/' {isCurrentTokenType(COLON)}?;
+    | lambda_param_no_default* lambda_param_with_default+ '/';
 
 lambda_star_etc
     : '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
@@ -658,13 +657,13 @@ lambda_kwds
 
 lambda_param_no_default
     : lambda_param ','
-    | lambda_param {isCurrentTokenType(COLON)}?;
+    | lambda_param;
 lambda_param_with_default
     : lambda_param default_assignment ','
-    | lambda_param default_assignment {isCurrentTokenType(COLON)}?;
+    | lambda_param default_assignment;
 lambda_param_maybe_default
     : lambda_param default_assignment? ','
-    | lambda_param default_assignment? {isCurrentTokenType(COLON)}?;
+    | lambda_param default_assignment?;
 lambda_param: NAME;
 
 // LITERALS
@@ -711,7 +710,7 @@ setcomp
     : '{' named_expression for_if_clauses '}';
 
 genexp
-    : '(' ( assignment_expression | expression {isnotCurrentTokenType(COLONEQUAL)}?) for_if_clauses ')';
+    : '(' ( assignment_expression | expression) for_if_clauses ')';
 
 dictcomp
     : '{' kvpair for_if_clauses '}';
@@ -720,10 +719,10 @@ dictcomp
 // =======================
 
 arguments
-    : args ','? {isCurrentTokenType(RPAR)}?;
+    : args ','?;
 
 args
-    : (starred_expression | ( assignment_expression | expression {isnotCurrentTokenType(COLONEQUAL)}?) {isnotCurrentTokenType(EQUAL)}?) (',' (starred_expression | ( assignment_expression | expression {isnotCurrentTokenType(COLONEQUAL)}?) {isnotCurrentTokenType(EQUAL)}?))* (',' kwargs )?
+    : (starred_expression | ( assignment_expression | expression)) (',' (starred_expression | ( assignment_expression | expression)))* (',' kwargs )?
     | kwargs;
 
 kwargs
@@ -750,7 +749,7 @@ kwarg_or_double_starred
 
 // NOTE: star_targets may contain *bitwise_or, targets may not.
 star_targets
-    : star_target {isnotCurrentTokenType(COMMA)}?
+    : star_target
     | star_target (',' star_target )* ','?;
 
 star_targets_list_seq: star_target (',' star_target)* ','?;
@@ -760,12 +759,12 @@ star_targets_tuple_seq
     | star_target ',';
 
 star_target
-    : '*' ({isnotCurrentTokenType(STAR)}? star_target)
+    : '*' (star_target)
     | target_with_star_atom;
 
 target_with_star_atom
-    : t_primary '.' NAME {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
-    | t_primary '[' slices ']' {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
+    : t_primary '.' NAME
+    | t_primary '[' slices ']'
     | star_atom;
 
 star_atom
@@ -780,15 +779,15 @@ single_target
     | '(' single_target ')';
 
 single_subscript_attribute_target
-    : t_primary '.' NAME {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
-    | t_primary '[' slices ']' {isnotCurrentTokenType(LPAR, LSQB, DOT)}?;
+    : t_primary '.' NAME
+    | t_primary '[' slices ']';
 
 t_primary
-    : t_primary '.' NAME {isCurrentTokenType(LPAR, LSQB, DOT)}?
-    | t_primary '[' slices ']' {isCurrentTokenType(LPAR, LSQB, DOT)}?
-    | t_primary genexp {isCurrentTokenType(LPAR, LSQB, DOT)}?
-    | t_primary '(' arguments? ')' {isCurrentTokenType(LPAR, LSQB, DOT)}?
-    | atom {isCurrentTokenType(LPAR, LSQB, DOT)}?;
+    : t_primary '.' NAME
+    | t_primary '[' slices ']'
+    | t_primary genexp
+    | t_primary '(' arguments? ')'
+    | atom;
 
 
 
@@ -798,8 +797,8 @@ t_primary
 del_targets: del_target (',' del_target)* ','?;
 
 del_target
-    : t_primary '.' NAME {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
-    | t_primary '[' slices ']' {isnotCurrentTokenType(LPAR, LSQB, DOT)}?
+    : t_primary '.' NAME
+    | t_primary '[' slices ']'
     | del_t_atom;
 
 del_t_atom
@@ -822,7 +821,7 @@ type_expressions
     | expression (',' expression)*;
 
 func_type_comment
-    : NEWLINE TYPE_COMMENT {isTokenTypeSequence(NEWLINE, INDENT)}?   // Must be followed by indented block
+    : NEWLINE TYPE_COMMENT   // Must be followed by indented block
     | TYPE_COMMENT;
 
 // *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
