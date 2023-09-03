@@ -223,4 +223,4 @@ class PythonLexerBase(Lexer):
         if self._wasSpaceIndentation and self._lastLineOfTabbedIndentation > 0:
             pass
 ##            IndentationErrorListener.lexerError(" line " + str(self._lastLineOfTabbedIndentation)
-##                                              + ":\t inconsistent use of tabs and spaces in indentation")
+##                                              + ":\t inconsistent use of tabs and spaces in indentation(s)")

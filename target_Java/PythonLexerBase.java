@@ -284,7 +284,7 @@ public abstract class PythonLexerBase extends Lexer {
     private void checkSpaceAndTabIndentation() {
         if (_wasSpaceIndentation && _lastLineOfTabbedIndentation > 0) {
 //            IndentationErrorListener.lexerError(" line " + _lastLineOfTabbedIndentation +
-//                                                ":\t inconsistent use of tabs and spaces in indentation");
+//                                                ":\t inconsistent use of tabs and spaces in indentation(s)");
         }
     }
 }
