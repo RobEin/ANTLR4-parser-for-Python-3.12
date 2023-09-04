@@ -200,7 +200,7 @@ parameters
     | param_with_default+ star_etc?
     | star_etc;
 
-// Some duplication here because we can't write (',' | {isCurrentTokenType1(self.RPAR)}?),
+// Some duplication here because we can't write (',' | {self.isCurrentTokenType1(self.RPAR)}?),
 // which is because we don't support empty alternatives (yet).
 
 slash_no_default
