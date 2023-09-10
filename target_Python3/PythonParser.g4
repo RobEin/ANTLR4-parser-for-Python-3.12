@@ -26,7 +26,7 @@ THE SOFTWARE.
   * Developed by : Robert Einhorn
   */
 
-parser grammar PythonParser; // Python 3.11.4    https://docs.python.org/3.11/reference/grammar.html
+parser grammar PythonParser; // Python 3.11.5    https://docs.python.org/3.11/reference/grammar.html
 options { tokenVocab=PythonLexer; superClass=PythonParserBase; }
 
 // STARTING RULES
