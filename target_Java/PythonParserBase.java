@@ -16,57 +16,21 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 
 public abstract class PythonParserBase extends Parser {
-    private boolean _isMatchedEOF = false;
-
     protected PythonParserBase(TokenStream input) {
         super(input);
     }
 
-
-    protected boolean isCurrentTokenType(int type1) {
-        int currentTokenType = getCurrentToken().getType();
-        return currentTokenType == type1;
-    }
-
-    protected boolean isCurrentTokenType(int type1, int type2) {
-        int currentTokenType = getCurrentToken().getType();
-        return currentTokenType == type1 ||
-               currentTokenType == type2;
-    }
-
-    protected boolean isCurrentTokenType(int type1, int type2, int type3) {
-        int currentTokenType = getCurrentToken().getType();
-        return currentTokenType == type1 ||
-               currentTokenType == type2 ||
-               currentTokenType == type3;
-    }
-
-    protected boolean isnotCurrentTokenType(int type1) {
-        return !isCurrentTokenType(type1);
-    }
-
-    protected boolean isnotCurrentTokenType(int type1, int type2) {
-        return !isCurrentTokenType(type1, type2);
-    }
-
-    protected boolean isnotCurrentTokenType(int type1, int type2, int type3) {
-        return !isCurrentTokenType(type1, type2, type3);
-    }
-
-
-    protected boolean isTokenTypeSequence(int type1, int type2) {
-        return _input.LA(1) == type1 &&
-               _input.LA(2) == type2;
-    }
-
+    protected PythonParserBase self = this; // for compatibility with PythonParserBase.py
+    private boolean _isMatchedEOF = false;
 
     // https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
-    protected boolean isCurrentTokenText(String tokenText) {
+    protected boolean isEqualCurrentTokenText(String tokenText) {
         return getCurrentToken().getText().equals(tokenText);
     }
 
-    protected boolean isnotCurrentTokenText(String tokenText) {
-        return !isCurrentTokenText(tokenText);
+    protected boolean isnotEqualCurrentTokenText(String tokenText) {
+        //int t = PythonParser.NEWLINE;
+        return !isEqualCurrentTokenText(tokenText);
     }
 
     @Override
