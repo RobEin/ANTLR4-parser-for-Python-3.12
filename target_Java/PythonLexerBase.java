@@ -139,7 +139,7 @@ public abstract class PythonLexerBase extends Lexer {
         }
     }
 
-    protected void handleNEWLINEtoken() {
+    private void handleNEWLINEtoken() {
         if (_opened > 0) { //*** https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining
             hideAndAddPendingToken(_curToken); // We're in an implicit line joining, ignore the current NEWLINE token
         } else {
