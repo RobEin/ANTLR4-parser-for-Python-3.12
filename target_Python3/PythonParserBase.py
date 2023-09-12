@@ -1,3 +1,16 @@
+##
+## Project      : a helper class to implement specific PEG grammar expressions in an ANTLR4 grammar
+##
+## Developed by : Robert Einhorn
+##
+
+## Related PEG grammar expressions:
+## &e
+## https://peps.python.org/pep-0617/#e-3
+##
+## !e
+## https://peps.python.org/pep-0617/#e-4
+
 from antlr4 import InputStream, Parser, Token
 from typing import TextIO
 import sys
