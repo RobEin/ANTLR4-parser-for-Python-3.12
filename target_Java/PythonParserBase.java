@@ -12,7 +12,6 @@
 // https://peps.python.org/pep-0617/#e-4
 
 import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 
 public abstract class PythonParserBase extends Parser {
@@ -21,7 +20,6 @@ public abstract class PythonParserBase extends Parser {
     }
 
     protected PythonParserBase self = this; // for compatibility with PythonParserBase.py
-    private boolean _isMatchedEOF = false;
 
     // https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
     protected boolean isEqualCurrentTokenText(String tokenText) {
@@ -29,18 +27,6 @@ public abstract class PythonParserBase extends Parser {
     }
 
     protected boolean isnotEqualCurrentTokenText(String tokenText) {
-        //int t = PythonParser.NEWLINE;
-        return !isEqualCurrentTokenText(tokenText);
-    }
-
-    @Override
-    public void exitRule() {
-        super.exitRule();
-//      if (isMatchedEOF()) { // implemented in Java ANTLR4 runtime but not implemented in Python ANTLR4 runtime (see: PythonParserBase.py)
-        if (getCurrentToken().getType() == Token.EOF &&
-            _isMatchedEOF == false) {
-
-            _isMatchedEOF = true;
-        }
+        return !isEqualCurrentTokenText(tokenText); // for compatibility with the Python 'not' logical operator
     }
 }
