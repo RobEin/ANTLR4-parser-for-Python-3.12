@@ -52,7 +52,8 @@ statement_newline
     | EOF;
 
 simple_stmts
-    : simple_stmt (';' simple_stmt)* ';'? NEWLINE;
+    : simple_stmt (';' simple_stmt)* ';'? NEWLINE
+    ;
 
 // NOTE: assignment MUST precede expression, else parsing a simple assignment
 // will throw a SyntaxError.
@@ -438,7 +439,7 @@ double_star_pattern
     : '**' pattern_capture_target;
 
 class_pattern
-    : name_or_attr '(' (positional_patterns (',' keyword_patterns)? | keyword_patterns ','?)? ')'
+    : name_or_attr '(' ((positional_patterns (',' keyword_patterns)? | keyword_patterns) ','?)? ')'
     ;
 
 
@@ -755,7 +756,7 @@ star_targets
 star_targets_list_seq: star_target (',' star_target)+ ','?;
 
 star_targets_tuple_seq
-    : star_target (',' star_target )* ','?
+    : star_target (',' | (',' star_target )+ ','?)
     ;
 
 star_target
