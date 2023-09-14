@@ -15,7 +15,7 @@
 
 [ANTLR 4 Runtime API](https://www.antlr.org/api/Java/)
 
-[Python 3.10 Lexical Analysis](https://docs.python.org/3.10/reference/lexical_analysis.html)
+[Python 3.10 Lexical Analysis](https://docs.python.org/3.11/reference/lexical_analysis.html)
 
 [cpython](https://github.com/python/cpython)
 
