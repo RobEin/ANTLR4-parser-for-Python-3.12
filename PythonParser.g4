@@ -169,8 +169,8 @@ decorators: ('@' named_expression NEWLINE )+;
 // -----------------
 
 class_def
-    : decorators class_def_raw
-    | class_def_raw;
+    : decorators? class_def_raw
+    ;
 
 class_def_raw
     : 'class' NAME ('(' arguments? ')' )? ':' block;
@@ -179,12 +179,12 @@ class_def_raw
 // --------------------
 
 function_def
-    : decorators function_def_raw
-    | function_def_raw;
+    : decorators? function_def_raw
+    ;
 
 function_def_raw
-    : 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block
-    | ASYNC 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block;
+    : ASYNC? 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block
+    ;
 
 // Function parameters
 // -------------------
@@ -203,11 +203,11 @@ parameters
 // which is because we don't support empty alternatives (yet).
 
 slash_no_default
-    : param_no_default+ '/' ','
-    | param_no_default+ '/';
+    : param_no_default+ '/' ','?
+    ;
 slash_with_default
-    : param_no_default* param_with_default+ '/' ','
-    | param_no_default* param_with_default+ '/';
+    : param_no_default* param_with_default+ '/' ','?
+    ;
 
 star_etc
     : '*' param_no_default param_maybe_default* kwds?
@@ -232,17 +232,17 @@ kwds
 //
 
 param_no_default
-    : param ',' TYPE_COMMENT?
-    | param TYPE_COMMENT?;
+    : param ','? TYPE_COMMENT?
+    ;
 param_no_default_star_annotation
-    : param_star_annotation ',' TYPE_COMMENT?
-    | param_star_annotation TYPE_COMMENT?;
+    : param_star_annotation ','? TYPE_COMMENT?
+    ;
 param_with_default
-    : param default_assignment ',' TYPE_COMMENT?
-    | param default_assignment TYPE_COMMENT?;
+    : param default_assignment ','? TYPE_COMMENT?
+    ;
 param_maybe_default
-    : param default_assignment? ',' TYPE_COMMENT?
-    | param default_assignment? TYPE_COMMENT?;
+    : param default_assignment? ','? TYPE_COMMENT?
+    ;
 param: NAME annotation?;
 param_star_annotation: NAME star_annotation;
 annotation: ':' expression;
@@ -253,11 +253,11 @@ default_assignment: '=' expression;
 // ------------
 
 if_stmt
-    : 'if' named_expression ':' block elif_stmt
-    | 'if' named_expression ':' block else_block?;
+    : 'if' named_expression ':' block (elif_stmt | else_block?)
+    ;
 elif_stmt
-    : 'elif' named_expression ':' block elif_stmt
-    | 'elif' named_expression ':' block else_block?;
+    : 'elif' named_expression ':' block (elif_stmt | else_block?)
+    ;
 else_block
     : 'else' ':' block;
 
@@ -271,21 +271,21 @@ while_stmt
 // -------------
 
 for_stmt
-    : 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?
-    | ASYNC 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?;
+    : ASYNC? 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?
+    ;
 
 // With statement
 // --------------
 
 with_stmt
-    : 'with' '(' with_item (',' with_item)* ','? ')' ':' block
-    | 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block
-    | ASYNC 'with' '(' with_item (',' with_item)* ','? ')' ':' block
-    | ASYNC 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block;
+    : ASYNC? 'with' '(' with_item (',' with_item)* ','? ')' ':' block
+    | ASYNC? 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block
+    ;
+
 
 with_item
-    : expression 'as' star_target
-    | expression;
+    : expression ('as' star_target)?
+    ;
 
 // Try statement
 // -------------
@@ -300,8 +300,8 @@ try_stmt
 // ----------------
 
 except_block
-    : 'except' expression ('as' NAME )? ':' block
-    | 'except' ':' block;
+    : 'except' (expression ('as' NAME )?)? ':' block
+    ;
 except_star_block
     : 'except' '*' expression ('as' NAME )? ':' block;
 finally_block
@@ -365,16 +365,16 @@ literal_expr
     | 'False';
 
 complex_number
-    : signed_real_number '+' imaginary_number
-    | signed_real_number '-' imaginary_number;
+    : signed_real_number ('+' | '-') imaginary_number
+    ;
 
 signed_number
-    : NUMBER
-    | '-' NUMBER;
+    : '-'? NUMBER
+    ;
 
 signed_real_number
-    : real_number
-    | '-' real_number;
+    : '-'? real_number
+    ;
 
 real_number
     : NUMBER;
@@ -425,8 +425,8 @@ star_pattern
 mapping_pattern
     : '{' '}'
     | '{' double_star_pattern ','? '}'
-    | '{' items_pattern ',' double_star_pattern ','? '}'
-    | '{' items_pattern ','? '}';
+    | '{' items_pattern (',' double_star_pattern)? ','? '}'
+    ;
 
 items_pattern
     : key_value_pattern (',' key_value_pattern)*;
@@ -438,10 +438,10 @@ double_star_pattern
     : '**' pattern_capture_target;
 
 class_pattern
-    : name_or_attr '(' ')'
-    | name_or_attr '(' positional_patterns ','? ')'
-    | name_or_attr '(' keyword_patterns ','? ')'
-    | name_or_attr '(' positional_patterns ',' keyword_patterns ','? ')';
+    : name_or_attr '(' (positional_patterns (',' keyword_patterns)? | keyword_patterns ','?)? ')'
+    ;
+
+
 
 positional_patterns
     : pattern (',' pattern)*;
@@ -456,23 +456,23 @@ keyword_pattern
 // -----------
 
 expressions
-    : expression (',' expression )+ ','?
-    | expression ','
-    | expression;
+    : expression (',' expression )* ','?
+    ;
+
 
 expression
-    : disjunction 'if' disjunction 'else' expression
-    | disjunction
-    | lambdef;
+    : disjunction ('if' disjunction 'else' expression)?
+    | lambdef
+    ;
 
 yield_expr
     : 'yield' 'from' expression
     | 'yield' star_expressions?;
 
 star_expressions
-    : star_expression (',' star_expression )+ ','?
-    | star_expression ','
-    | star_expression;
+    : star_expression (',' star_expression )* ','?
+    ;
+
 
 star_expression
     : '*' bitwise_or
@@ -492,12 +492,12 @@ named_expression
     | expression;
 
 disjunction
-    : conjunction ('or' conjunction )+
-    | conjunction;
+    : conjunction ('or' conjunction )*
+    ;
 
 conjunction
-    : inversion ('and' inversion )+
-    | inversion;
+    : inversion ('and' inversion )*
+    ;
 
 inversion
     : 'not' inversion
@@ -507,8 +507,8 @@ inversion
 // --------------------
 
 comparison
-    : bitwise_or compare_op_bitwise_or_pair+
-    | bitwise_or;
+    : bitwise_or compare_op_bitwise_or_pair*
+    ;
 
 compare_op_bitwise_or_pair
     : eq_bitwise_or
@@ -550,31 +550,31 @@ bitwise_and
     | shift_expr;
 
 shift_expr
-    : shift_expr '<<' sum
-    | shift_expr '>>' sum
-    | sum;
+    : shift_expr ('<<' | '>>') sum
+    | sum
+    ;
 
 // Arithmetic operators
 // --------------------
 
 sum
-    : sum '+' term
-    | sum '-' term
-    | term;
+    : sum ('+' | '-') term
+    | term
+    ;
 
 term
-    : term '*' factor
-    | term '/' factor
-    | term '//' factor
-    | term '%' factor
-    | term '@' factor
-    | factor;
+    : term ('*' | '/' | '//' | '%' | '@') factor
+    | factor
+    ;
+
+
+
 
 factor
-    : '+' factor
-    | '-' factor
-    | '~' factor
-    | power;
+    : ('+' | '-' | '~') factor
+    | power
+    ;
+
 
 power
     : await_primary '**' factor
@@ -586,15 +586,15 @@ power
 // Primary elements are things like "obj.something.something", "obj[something]", "obj(something)", "obj" ...
 
 await_primary
-    : AWAIT primary
-    | primary;
+    : AWAIT? primary
+    ;
 
 primary
-    : primary '.' NAME
-    | primary genexp
-    | primary '(' arguments? ')'
-    | primary '[' slices ']'
-    | atom;
+    : primary ('.' NAME | genexp | '(' arguments? ')' | '[' slices ']')
+    | atom
+    ;
+
+
 
 slices
     : slice
@@ -640,30 +640,30 @@ lambda_parameters
     | lambda_star_etc;
 
 lambda_slash_no_default
-    : lambda_param_no_default+ '/' ','
-    | lambda_param_no_default+ '/';
+    : lambda_param_no_default+ '/' ','?
+    ;
 
 lambda_slash_with_default
-    : lambda_param_no_default* lambda_param_with_default+ '/' ','
-    | lambda_param_no_default* lambda_param_with_default+ '/';
+    : lambda_param_no_default* lambda_param_with_default+ '/' ','?
+    ;
 
 lambda_star_etc
-    : '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
-    | '*' ',' lambda_param_maybe_default+ lambda_kwds?
-    | lambda_kwds;
+    : '*' (lambda_param_no_default | ',') lambda_param_maybe_default* lambda_kwds?
+    | lambda_kwds
+    ;
 
 lambda_kwds
     : '**' lambda_param_no_default;
 
 lambda_param_no_default
-    : lambda_param ','
-    | lambda_param;
+    : lambda_param ','?
+    ;
 lambda_param_with_default
-    : lambda_param default_assignment ','
-    | lambda_param default_assignment;
+    : lambda_param default_assignment ','?
+    ;
 lambda_param_maybe_default
-    : lambda_param default_assignment? ','
-    | lambda_param default_assignment?;
+    : lambda_param default_assignment? ','?
+    ;
 lambda_param: NAME;
 
 // LITERALS
@@ -700,8 +700,8 @@ for_if_clauses
     : for_if_clause+;
 
 for_if_clause
-    : ASYNC 'for' star_targets 'in' disjunction ('if' disjunction )*
-    | 'for' star_targets 'in' disjunction ('if' disjunction )*;
+    : ASYNC? 'for' star_targets 'in' disjunction ('if' disjunction )*
+    ;
 
 listcomp
     : '[' named_expression for_if_clauses ']';
@@ -726,9 +726,9 @@ args
     | kwargs;
 
 kwargs
-    : kwarg_or_starred (',' kwarg_or_starred)* ',' kwarg_or_double_starred (',' kwarg_or_double_starred)*
-    | kwarg_or_starred (',' kwarg_or_starred)*
-    | kwarg_or_double_starred (',' kwarg_or_double_starred)*;
+    : kwarg_or_starred (',' kwarg_or_starred)* (',' kwarg_or_double_starred (',' kwarg_or_double_starred)*)?
+    | kwarg_or_double_starred (',' kwarg_or_double_starred)*
+    ;
 
 starred_expression
     : '*' expression;
@@ -749,23 +749,23 @@ kwarg_or_double_starred
 
 // NOTE: star_targets may contain *bitwise_or, targets may not.
 star_targets
-    : star_target
-    | star_target (',' star_target )* ','?;
+    : star_target (',' star_target )* ','?
+    ;
 
-star_targets_list_seq: star_target (',' star_target)* ','?;
+star_targets_list_seq: star_target (',' star_target)+ ','?;
 
 star_targets_tuple_seq
-    : star_target (',' star_target )+ ','?
-    | star_target ',';
+    : star_target (',' star_target )* ','?
+    ;
 
 star_target
     : '*' (star_target)
     | target_with_star_atom;
 
 target_with_star_atom
-    : t_primary '.' NAME
-    | t_primary '[' slices ']'
-    | star_atom;
+    : t_primary ('.' NAME | '[' slices ']')
+    | star_atom
+    ;
 
 star_atom
     : NAME
@@ -779,15 +779,15 @@ single_target
     | '(' single_target ')';
 
 single_subscript_attribute_target
-    : t_primary '.' NAME
-    | t_primary '[' slices ']';
+    : t_primary ('.' NAME | '[' slices ']')
+    ;
 
 t_primary
-    : t_primary '.' NAME
-    | t_primary '[' slices ']'
-    | t_primary genexp
-    | t_primary '(' arguments? ')'
-    | atom;
+    : t_primary ('.' NAME | '[' slices ']' | genexp | '(' arguments? ')')
+    | atom
+    ;
+
+
 
 
 
@@ -797,9 +797,9 @@ t_primary
 del_targets: del_target (',' del_target)* ','?;
 
 del_target
-    : t_primary '.' NAME
-    | t_primary '[' slices ']'
-    | del_t_atom;
+    : t_primary ('.' NAME | '[' slices ']')
+    | del_t_atom
+    ;
 
 del_t_atom
     : NAME
@@ -810,15 +810,15 @@ del_t_atom
 // TYPING ELEMENTS
 // ---------------
 
+
 // type_expressions allow */** but ignore them
 type_expressions
-    : expression (',' expression)* ',' '*' expression ',' '**' expression
-    | expression (',' expression)* ',' '*' expression
-    | expression (',' expression)* ',' '**' expression
-    | '*' expression ',' '**' expression
-    | '*' expression
+    : expression (',' expression)* (',' ('*' expression (',' '**' expression)? | '**' expression))?
+    | '*' expression (',' '**' expression)?
     | '**' expression
-    | expression (',' expression)*;
+    ;
+
+
 
 func_type_comment
     : NEWLINE TYPE_COMMENT   // Must be followed by indented block
