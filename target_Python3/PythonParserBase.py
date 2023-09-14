@@ -18,7 +18,6 @@ import sys
 class PythonParserBase(Parser):
     def __init__(self, input: InputStream, output: TextIO = sys.stdout):
         super().__init__(input, output)
-        self._isMatchedEOF = False
 
     def isEqualCurrentTokenText(self, tokenText: str) -> bool:
         return self.getCurrentToken().text == tokenText
