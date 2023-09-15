@@ -114,8 +114,8 @@ return_stmt
     : 'return' star_expressions?;
 
 raise_stmt
-    : 'raise' expression ('from' expression )?
-    | 'raise';
+    : 'raise' (expression ('from' expression )?)?
+    ;
 
 global_stmt: 'global' NAME (',' NAME)*;
 
@@ -396,11 +396,11 @@ value_pattern
     : attr;
 
 attr
-    : NAME ('.' NAME)+;
-
+    : NAME ('.' NAME)+
+    ;
 name_or_attr
-    : NAME ('.' NAME)*;
-
+    : NAME ('.' NAME)*
+    ;
 
 group_pattern
     : '(' pattern ')';
@@ -467,8 +467,8 @@ expression
     ;
 
 yield_expr
-    : 'yield' 'from' expression
-    | 'yield' star_expressions?;
+    : 'yield' ('from' expression | star_expressions?)
+    ;
 
 star_expressions
     : star_expression (',' star_expression )* ','?
