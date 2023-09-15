@@ -1,25 +1,25 @@
-##The MIT License (MIT)
-##Copyright (c) 2021 Robert Einhorn
-##
-##Permission is hereby granted, free of charge, to any person obtaining a copy
-##of this software and associated documentation files (the "Software"), to deal
-##in the Software without restriction, including without limitation the rights
-##to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-##copies of the Software, and to permit persons to whom the Software is
-##furnished to do so, subject to the following conditions:
-##The above copyright notice and this permission notice shall be included in
-##all copies or substantial portions of the Software.
-##THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-##IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-##FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-##AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-##LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-##OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-##THE SOFTWARE.
+# The MIT License (MIT)
+# Copyright (c) 2021 Robert Einhorn
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
-## Project      : Python Indent/Dedent handler for ANTLR4 grammars
-##
-## Developed by : Robert Einhorn
+# Project      : Python Indent/Dedent handler for ANTLR4 grammars
+# 
+# Developed by : Robert Einhorn
 
 from collections import deque
 from typing import TextIO
@@ -82,10 +82,10 @@ class PythonLexerBase(Lexer):
         self._curToken = super().nextToken() if self._ffgToken is None else self._ffgToken
         self._ffgToken = self._curToken if self._curToken.type == Token.EOF else super().nextToken()
 
-    ## initialize the _indentLengths stack
-    ## hide the leading NEWLINE token(s)
-    ## if exists, find the first statement (not NEWLINE, not EOF token) that comes from the default channel
-    ## insert a leading INDENT token if necessary
+    # initialize the _indentLengths stack
+    # hide the leading NEWLINE token(s)
+    # if exists, find the first statement (not NEWLINE, not EOF token) that comes from the default channel
+    # insert a leading INDENT token if necessary
     def handleStartOfInput(self):
         if len(self._indentLengths) == 0: # We're at the first token
             # initialize the stack with a default 0 indentation length
@@ -106,7 +106,7 @@ class PythonLexerBase(Lexer):
     def insertLeadingIndentToken(self):
         if self._previousPendingTokenType == self.WS: # there is an "indentation" before the first statement
             # insert an INDENT token before the first statement to raise an 'unexpected indent' error later by the parser
-            self.createAndAddPendingToken(self.INDENT, self._curToken) # insert an INDENT token before the _curToken
+            self.createAndAddPendingToken(self.INDENT, self._curToken)
 
     def handleNEWLINEtoken(self):
         if self._opened > 0: # *** https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining
@@ -136,17 +136,17 @@ class PythonLexerBase(Lexer):
         # *** https://docs.python.org/3/reference/lexical_analysis.html#indentation
         prevIndentLength: int = self._indentLengths[0] # never has null value
         if curIndentLength > prevIndentLength:
-            self.createAndAddPendingToken(self.INDENT, self._ffgToken) # insert an INDENT token before the _ffgToken
+            self.createAndAddPendingToken(self.INDENT, self._ffgToken)
             self._indentLengths.appendleft(curIndentLength)
         else:
             while curIndentLength < prevIndentLength: # more than 1 DEDENT token may be inserted to the token stream
                 self._indentLengths.popleft()
                 prevIndentLength = self._indentLengths[0]
-                self.createAndAddPendingToken(self.DEDENT, self._ffgToken) # insert a DEDENT token before the _ffgToken
+                self.createAndAddPendingToken(self.DEDENT, self._ffgToken)
                 if curIndentLength > prevIndentLength:
                     pass
-##                    IndentationErrorListener.lexerError(" line " + str(self._ffgToken.line)
-##                                                      + ": \t unindent does not match any outer indentation level")
+#                    IndentationErrorListener.lexerError(" line " + str(self._ffgToken.line)
+#                                                      + ": \t unindent does not match any outer indentation level")
 
     def handleSTRINGtoken(self): # remove the \<newline> escape sequences from the string literal
         # https://docs.python.org/3.11/reference/lexical_analysis.html#string-and-bytes-literals
@@ -172,23 +172,19 @@ class PythonLexerBase(Lexer):
                 pass # no trailing NEWLINE token is needed
             case other:
                 # insert an extra trailing NEWLINE token that serves as the end of the last statement
-                self.createAndAddPendingToken(self.NEWLINE, self._ffgToken) # insert before the _ffgToken
+                self.createAndAddPendingToken(self.NEWLINE, self._ffgToken)
         self.insertIndentOrDedentToken(0) # Now insert as much trailing DEDENT tokens as needed
 
     def hideAndAddPendingToken(self, token: CommonToken):
         token.channel = Token.HIDDEN_CHANNEL # channel=1
         self.addPendingToken(token)
 
-    def createAndAddPendingToken(self, type: int, followingToken: CommonToken): # insert a token before the followingToken
-        token = CommonToken(followingToken.source
-                          , type
-                          , Token.DEFAULT_CHANNEL
-                          , followingToken.start
-                          , followingToken.start - 1)
-
+    def createAndAddPendingToken(self, type: int, baseToken: CommonToken):
+        token = baseToken.clone()
+        token.type  = type
+        token.channel = Token.DEFAULT_CHANNEL
+        token.stop = baseToken.start - 1
         token.text = "<" + self.symbolicNames[type] + ">"
-        token.line = followingToken.line
-        token.column = followingToken.column
         self.addPendingToken(token)
 
     def addPendingToken(self, token: CommonToken):
@@ -198,14 +194,14 @@ class PythonLexerBase(Lexer):
             self._lastPendingTokenTypeForDefaultChannel = self._previousPendingTokenType
         self._pendingTokens.append(token) # the token will be added to the token stream
 
-    ## Calculates the indentation of the provided spaces, taking the
-    ## following rules into account:
-    ##
-    ## "Tabs are replaced (from left to right) by one to eight spaces
-    ##  such that the total number of characters up to and including
-    ##  the replacement is a multiple of eight [...]"
-    ##
-    ##  -- https://docs.python.org/3/reference/lexical_analysis.html#indentation
+    # Calculates the indentation of the provided spaces, taking the
+    # following rules into account:
+    # 
+    # "Tabs are replaced (from left to right) by one to eight spaces
+    #  such that the total number of characters up to and including
+    #  the replacement is a multiple of eight [...]"
+    # 
+    #  -- https://docs.python.org/3/reference/lexical_analysis.html#indentation
     def getCurrentIndentationLength(self) -> int:
         whiteSpaces = self._curToken.text
         TAB_LENGTH = 8 # the standard number of spaces to replace a tab to spaces
@@ -222,5 +218,5 @@ class PythonLexerBase(Lexer):
     def checkSpaceAndTabIndentation(self):
         if self._wasSpaceIndentation and self._lastLineOfTabbedIndentation > 0:
             pass
-##            IndentationErrorListener.lexerError(" line " + str(self._lastLineOfTabbedIndentation)
-##                                              + ":\t inconsistent use of tabs and spaces in indentation(s)")
+#            IndentationErrorListener.lexerError(" line " + str(self._lastLineOfTabbedIndentation)
+#                                               + ":\t inconsistent use of tabs and spaces in indentation(s)")
