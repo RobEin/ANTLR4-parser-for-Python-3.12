@@ -135,18 +135,18 @@ class PythonLexerBase(Lexer):
                     else: # We're before a statement (there is no whitespace before the statement)
                         self.insert_indent_or_dedent_token(0) # may insert DEDENT token(s)
 
-    def insert_indent_or_dedent_token(self, curIndentLength: int):
+    def insert_indent_or_dedent_token(self, cur_indent_length: int):
         # *** https://docs.python.org/3/reference/lexical_analysis.html#indentation
-        prevIndentLength: int = self._indent_lengths[0] # never has null value
-        if curIndentLength > prevIndentLength:
+        prev_indent_length: int = self._indent_lengths[0] # never has null value
+        if cur_indent_length > prev_indent_length:
             self.create_and_add_pending_token(self.INDENT, self._ffg_token)
-            self._indent_lengths.appendleft(curIndentLength)
+            self._indent_lengths.appendleft(cur_indent_length)
         else:
-            while curIndentLength < prevIndentLength: # more than 1 DEDENT token may be inserted to the token stream
+            while cur_indent_length < prev_indent_length: # more than 1 DEDENT token may be inserted to the token stream
                 self._indent_lengths.popleft()
-                prevIndentLength = self._indent_lengths[0]
+                prev_indent_length = self._indent_lengths[0]
                 self.create_and_add_pending_token(self.DEDENT, self._ffg_token)
-                if curIndentLength > prevIndentLength:
+                if cur_indent_length > prev_indent_length:
                     pass
 #                    IndentationErrorListener.lexer_error(" line " + str(self._ffg_token.line)
 #                                                       + ": \t unindent does not match any outer indentation level")
@@ -182,11 +182,11 @@ class PythonLexerBase(Lexer):
         token.channel = Token.HIDDEN_CHANNEL # channel=1
         self.add_pending_token(token)
 
-    def create_and_add_pending_token(self, type: int, baseToken: CommonToken):
-        token: CommonToken = baseToken.clone()
+    def create_and_add_pending_token(self, type: int, base_token: CommonToken):
+        token: CommonToken = base_token.clone()
         token.type  = type
         token.channel = Token.DEFAULT_CHANNEL
-        token.stop = baseToken.start - 1
+        token.stop = base_token.start - 1
         token.text = "<" + self.symbolicNames[type] + ">"
         self.add_pending_token(token)
 
