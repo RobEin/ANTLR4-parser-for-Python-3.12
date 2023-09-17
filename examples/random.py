@@ -282,10 +282,10 @@ class Random(_random.Random):
     ## -------------------- integer methods  -------------------
 
     def randrange(self, start, stop=None, step=_ONE):
-        """Choose a random item from range(start, stop[, step]).
+        """Choose a random item from range(stop) or range(start, stop[, step]).
 
-        This fixes the problem with randint() which includes the
-        endpoint; in Python this is usually not what you want.
+        Roughly equivalent to ``choice(range(start, stop, step))`` but
+        supports arbitrarily large ranges and is optimized for common cases.
 
         """
 
@@ -366,7 +366,10 @@ class Random(_random.Random):
 
     def choice(self, seq):
         """Choose a random element from a non-empty sequence."""
-        if not seq:
+
+        # As an accommodation for NumPy, we don't use "if not seq"
+        # because bool(numpy.array()) raises a ValueError.
+        if not len(seq):
             raise IndexError('Cannot choose from an empty sequence')
         return seq[self._randbelow(len(seq))]
 
@@ -791,7 +794,7 @@ class SystemRandom(Random):
     """
 
     def random(self):
-        """Get the next random number in the range [0.0, 1.0)."""
+        """Get the next random number in the range 0.0 <= X < 1.0."""
         return (int.from_bytes(_urandom(7)) >> 3) * RECIP_BPF
 
     def getrandbits(self, k):

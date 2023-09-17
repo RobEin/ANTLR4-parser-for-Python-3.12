@@ -285,6 +285,7 @@ def _syscmd_ver(system='', release='', version='',
                                            stdin=subprocess.DEVNULL,
                                            stderr=subprocess.DEVNULL,
                                            text=True,
+                                           encoding="locale",
                                            shell=True)
         except (OSError, subprocess.CalledProcessError) as why:
             #print('Command %s failed: %s' % (cmd, why))
@@ -762,6 +763,7 @@ class _Processor:
                 ['uname', '-p'],
                 stderr=subprocess.DEVNULL,
                 text=True,
+                encoding="utf8",
             ).strip()
         except (OSError, subprocess.CalledProcessError):
             pass
@@ -785,6 +787,8 @@ class uname_result(
     except when needed.
     """
 
+    _fields = ('system', 'node', 'release', 'version', 'machine', 'processor')
+
     @functools.cached_property
     def processor(self):
         return _unknown_as_blank(_Processor.get())
@@ -798,7 +802,7 @@ class uname_result(
     @classmethod
     def _make(cls, iterable):
         # override factory to affect length check
-        num_fields = len(cls._fields)
+        num_fields = len(cls._fields) - 1
         result = cls.__new__(cls, *iterable)
         if len(result) != num_fields + 1:
             msg = f'Expected {num_fields} arguments, got {len(result)}'
@@ -812,7 +816,7 @@ class uname_result(
         return len(tuple(iter(self)))
 
     def __reduce__(self):
-        return uname_result, tuple(self)[:len(self._fields)]
+        return uname_result, tuple(self)[:len(self._fields) - 1]
 
 
 _uname_cache = None
