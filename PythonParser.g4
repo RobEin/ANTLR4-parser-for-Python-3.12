@@ -170,8 +170,8 @@ decorators: ('@' named_expression NEWLINE )+;
 // -----------------
 
 class_def
-    : decorators? class_def_raw
-    ;
+    : decorators class_def_raw
+    | class_def_raw;
 
 class_def_raw
     : 'class' NAME ('(' arguments? ')' )? ':' block;
@@ -180,8 +180,8 @@ class_def_raw
 // --------------------
 
 function_def
-    : decorators? function_def_raw
-    ;
+    : decorators function_def_raw
+    | function_def_raw;
 
 function_def_raw
     : ASYNC? 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block
@@ -312,14 +312,14 @@ finally_block
 // ---------------
 
 match_stmt
-    : match_soft_kw subject_expr ':' NEWLINE INDENT case_block+ DEDENT;
+    : soft_kw_match subject_expr ':' NEWLINE INDENT case_block+ DEDENT;
 
 subject_expr
     : star_named_expression ',' star_named_expressions?
     | named_expression;
 
 case_block
-    : case_soft_kw patterns guard? ':' block;
+    : soft_kw_case patterns guard? ':' block;
 
 guard: 'if' named_expression;
 
@@ -390,7 +390,7 @@ pattern_capture_target
     :  {self.isnotEqualCurrentTokenText("_")}? NAME;
 
 wildcard_pattern
-    : underscore_soft_kw;
+    : soft_kw_underscore;
 
 value_pattern
     : attr;
@@ -572,14 +572,14 @@ term
 
 
 factor
-    : ('+' | '-' | '~') factor
-    | power
-    ;
-
+    : '+' factor
+    | '-' factor
+    | '~' factor
+    | power;
 
 power
-    : await_primary '**' factor
-    | await_primary;
+    : await_primary ('**' factor)?
+    ;
 
 // Primary elements
 // ----------------
@@ -587,8 +587,8 @@ power
 // Primary elements are things like "obj.something.something", "obj[something]", "obj(something)", "obj" ...
 
 await_primary
-    : AWAIT? primary
-    ;
+    : AWAIT primary
+    | primary;
 
 primary
     : primary ('.' NAME | genexp | '(' arguments? ')' | '[' slices ']')
@@ -649,9 +649,9 @@ lambda_slash_with_default
     ;
 
 lambda_star_etc
-    : '*' (lambda_param_no_default | ',') lambda_param_maybe_default* lambda_kwds?
-    | lambda_kwds
-    ;
+    : '*' lambda_param_no_default lambda_param_maybe_default* lambda_kwds?
+    | '*' ',' lambda_param_maybe_default+ lambda_kwds?
+    | lambda_kwds;
 
 lambda_kwds
     : '**' lambda_param_no_default;
@@ -826,8 +826,8 @@ func_type_comment
     | TYPE_COMMENT;
 
 // *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
-match_soft_kw:      {self.isEqualCurrentTokenText("match")}? NAME;
-case_soft_kw:       {self.isEqualCurrentTokenText("case")}?  NAME;
-underscore_soft_kw: {self.isEqualCurrentTokenText("_")}?     NAME;
+soft_kw_match:      {self.isEqualCurrentTokenText("match")}? NAME;
+soft_kw_case:       {self.isEqualCurrentTokenText("case")}?  NAME;
+soft_kw_underscore: {self.isEqualCurrentTokenText("_")}?     NAME;
 
 // ========================= END OF THE GRAMMAR ===========================
