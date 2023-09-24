@@ -28,7 +28,7 @@ static class Program
         String metaData = token.ToString()!;          // original format: [@TokenIndex,startIndex:stopIndex='text',<TokenType>,line:charPositionInLine]
         int lesserPos = metaData!.LastIndexOf(",<")!;
         int greaterPos = metaData!.LastIndexOf(">,")!;
-        return metaData.Substring(0, lesserPos + 2) + // modified format: [@TokenIndex,startIndex:stopIndex='text',<RuleName>,line:charPositionInLine]
+        return metaData.Substring(0, lesserPos + 2) + // modified format: [@TokenIndex,startIndex:stopIndex='text',<TokenName>,line:charPositionInLine]
                 parser.Vocabulary.GetSymbolicName(token.Type) +
                 metaData.Substring(greaterPos);
     }
