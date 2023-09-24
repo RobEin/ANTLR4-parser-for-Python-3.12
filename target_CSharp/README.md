@@ -3,7 +3,7 @@
 #### Command line example:
 - first create a C# project called grun_tokens then copy the two grammar files and test.py to this directory
 ```bash
-    dotnet new console -o . -n grun_tokens
+    dotnet new console -o . -n grun_tokens -f net7.0
     del program.cs
     dotnet add package Antlr4.Runtime.Standard --version 4.13.1
 ```
