@@ -20,7 +20,7 @@ dotnet build
 .\bin\Debug\net7.0\grun_tokens.exe test.py
 ```
 
-#### Related link:
+#### Related links:
 [C# target](https://github.com/antlr/antlr4/blob/dev/doc/csharp-target.md)
 
 [Download .NET](https://dotnet.microsoft.com/en-us/download)
