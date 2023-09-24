@@ -209,18 +209,19 @@ class PythonLexerBase(Lexer):
         white_spaces: str = self._cur_token.text
         TAB_LENGTH: int = 8 # the standard number of spaces to replace a tab to spaces
         length: int = 0
-        i: int
-        for i in range(len(white_spaces)):
-            if white_spaces[i] == ' ': # A normal space char
-                self._was_space_indentation = True
-                length += 1
-            elif white_spaces[i] == '\t':
-                self._last_line_of_tabbed_indentation = self._cur_token.line
-                length += TAB_LENGTH - (length % TAB_LENGTH)
+        ch: str
+        for ch in white_spaces:
+            match ch:
+                case ' ': # A normal space char
+                    self._was_space_indentation = True
+                    length += 1
+                case '\t':
+                    self._last_line_of_tabbed_indentation = self._cur_token.line
+                    length += TAB_LENGTH - (length % TAB_LENGTH)
         return length
 
     def check_space_and_tab_indentation(self):
         if self._was_space_indentation and self._last_line_of_tabbed_indentation > 0:
             pass
 #            IndentationErrorListener.lexer_error(" line " + str(self._last_line_of_tabbed_indentation)
-#                                               + ":\t inconsistent use of tabs and spaces in indentation(s)")
+#                                               + ":\t inconsistent use of tabs and spaces in indentation")

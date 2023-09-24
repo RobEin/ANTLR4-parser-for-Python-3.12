@@ -33,10 +33,6 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.CommonToken;
 
 public abstract class PythonLexerBase extends Lexer {
-    protected PythonLexerBase(CharStream input) {
-        super(input);
-    }
-
     // A stack that keeps track of the indentation lengths
     private final Deque<Integer> _indentLengths = new ArrayDeque<>();
     // A linked list where tokens are waiting to be loaded into the token stream
@@ -55,6 +51,10 @@ public abstract class PythonLexerBase extends Lexer {
 
     private CommonToken _curToken; // current (under processing) token
     private Token _ffgToken; // following (look ahead) token
+
+    protected PythonLexerBase(CharStream input) {
+        super(input);
+    }
 
     @Override
     public Token nextToken() { // reading the input stream until a return EOF
@@ -263,8 +263,8 @@ public abstract class PythonLexerBase extends Lexer {
         final String whiteSpaces = _curToken.getText();
         final int TAB_LENGTH = 8; // the standard number of spaces to replace a tab to spaces
         int length = 0;
-        for (int i = 0; i < whiteSpaces.length(); i++) {
-            switch (whiteSpaces.charAt(i)) {
+        for (char ch : whiteSpaces.toCharArray()) {
+            switch (ch) {
                 case ' ': // A normal space char
                     _wasSpaceIndentation = true;
                     length += 1;
@@ -281,7 +281,7 @@ public abstract class PythonLexerBase extends Lexer {
     private void checkSpaceAndTabIndentation() {
         if (_wasSpaceIndentation && _lastLineOfTabbedIndentation > 0) {
 //            IndentationErrorListener.lexerError(" line " + _lastLineOfTabbedIndentation +
-//                                                ":\t inconsistent use of tabs and spaces in indentation(s)");
+//                                                ":\t inconsistent use of tabs and spaces in indentation");
         }
     }
 }

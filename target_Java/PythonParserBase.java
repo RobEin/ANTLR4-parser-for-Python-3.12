@@ -19,14 +19,14 @@ public abstract class PythonParserBase extends Parser {
         super(input);
     }
 
-    protected PythonParserBase self = this; // for compatibility with PythonParserBase.py
+    public PythonParserBase self = this; // for compatibility with PythonParserBase.py
 
     // https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
-    protected boolean isEqualCurrentTokenText(String tokenText) {
+    public boolean isEqualCurrentTokenText(String tokenText) {
         return getCurrentToken().getText().equals(tokenText);
     }
 
-    protected boolean isnotEqualCurrentTokenText(String tokenText) {
+    public boolean isnotEqualCurrentTokenText(String tokenText) {
         return !isEqualCurrentTokenText(tokenText); // for compatibility with the Python 'not' logical operator
     }
 }
