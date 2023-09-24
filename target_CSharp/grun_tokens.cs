@@ -9,7 +9,7 @@ static class Program
 {
     static void Main(string[] args)
     {
-        var input = CharStreams.fromPath(args[0]);
+        var input = CharStreams.fromPath(args[0]); // default command line argument: ..\..\..\test.py
         var lexer = new PythonLexer(input);
         var tokens = new CommonTokenStream(lexer);
         var parser = new PythonParser(tokens);
