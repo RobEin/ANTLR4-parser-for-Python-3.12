@@ -55,11 +55,9 @@ public abstract class PythonLexerBase : Lexer
     // The last number of the line of the indentation that used tab char
     private int _lastLineOfTabbedIndentation = 0;
 
-    [Required]
-    private CommonToken _curToken { get; set; } = null!; // current (under processing) token
+    private CommonToken _curToken = null!; // current (under processing) token
     
-    [Required]
-    private IToken _ffgToken { get; set; } = null!; // following (look ahead) token
+    private IToken _ffgToken = null!; // following (look ahead) token
 
     public override IToken NextToken() // reading the input stream until a return EOF
     {
