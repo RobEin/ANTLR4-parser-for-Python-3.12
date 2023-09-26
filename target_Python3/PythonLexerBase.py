@@ -53,7 +53,7 @@ class PythonLexerBase(Lexer):
 
     def nextToken(self) -> CommonToken: # reading the input stream until a return EOF
         if self._input.size == 0:
-            return CommonToken(Token.EOF, "<EOF>")
+            return super().nextToken() # EOF token
         else:
             self.check_next_token()
             return self._pending_tokens.pop(0) # add the queued token to the token stream

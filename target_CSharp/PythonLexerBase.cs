@@ -62,7 +62,7 @@ public abstract class PythonLexerBase : Lexer
     {
         if (InputStream.Size == 0)
         {
-            return new CommonToken(Eof, "<EOF>");
+            return base.NextToken(); // EOF token
         }
         else
         {
