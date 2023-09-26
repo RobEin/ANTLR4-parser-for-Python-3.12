@@ -60,17 +60,10 @@ public abstract class PythonLexerBase : Lexer
 
     public override IToken NextToken() // reading the input stream until a return EOF
     {
-        if (InputStream.Size == 0)
-        {
-            return base.NextToken(); // EOF token
-        }
-        else
-        {
-            CheckNextToken();
-            IToken firstPendingToken = _pendingTokens.First();
-            _pendingTokens.RemoveFirst();
-            return firstPendingToken; // add the queued token to the token stream
-        }
+        CheckNextToken();
+        IToken firstPendingToken = _pendingTokens.First();
+        _pendingTokens.RemoveFirst();
+        return firstPendingToken; // add the queued token to the token stream
     }
 
     private void CheckNextToken()
@@ -224,11 +217,14 @@ public abstract class PythonLexerBase : Lexer
             { // more than 1 DEDENT token may be inserted into the token stream
                 _indentLengths.Pop();
                 prevIndentLength = _indentLengths.Peek(); // never has a null value
-                CreateAndAddPendingToken(PythonLexer.DEDENT, _ffgToken);
-                if (curIndentLength > prevIndentLength)
+                if (curIndentLength <= prevIndentLength)
                 {
-                    //                    IndentationErrorListener.lexerError(" line " + _ffgToken.getLine() +
-                    //                                                        ": \t unindent does not match any outer indentation level");
+                    CreateAndAddPendingToken(PythonLexer.DEDENT, _ffgToken);
+                }
+                else
+                {
+//                    IndentationErrorListener.lexerError(" line " + _ffgToken.getLine() +
+//                                                        ": \t unindent does not match any outer indentation level");
                 }
             }
         }

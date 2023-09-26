@@ -34,7 +34,9 @@ import org.antlr.v4.runtime.CommonToken;
 
 public abstract class PythonLexerBase extends Lexer {
     // A stack that keeps track of the indentation lengths
-    private final Deque<Integer> _indentLengths = new ArrayDeque<>();
+    private final Deque<Integer> _indentLengths = new ArrayDeque<>(
+
+    );
     // A linked list where tokens are waiting to be loaded into the token stream
     private final LinkedList<Token> _pendingTokens = new LinkedList<>();
     // last pending token types
@@ -58,12 +60,8 @@ public abstract class PythonLexerBase extends Lexer {
 
     @Override
     public Token nextToken() { // reading the input stream until a return EOF
-        if (_input.size() == 0) {
-            return super.nextToken(); // EOF token
-        } else {
-            checkNextToken();
-            return _pendingTokens.pollFirst(); // add the queued token to the token stream
-        }
+        checkNextToken();
+        return _pendingTokens.pollFirst(); // add the queued token to the token stream
     }
 
     private void checkNextToken() {
@@ -185,8 +183,9 @@ public abstract class PythonLexerBase extends Lexer {
             while (curIndentLength < prevIndentLength) { // more than 1 DEDENT token may be inserted to the token stream
                 _indentLengths.pop();
                 prevIndentLength = _indentLengths.peek(); // never has null value
-                createAndAddPendingToken(PythonLexer.DEDENT, _ffgToken);
-                if (curIndentLength > prevIndentLength) {
+                if (curIndentLength <= prevIndentLength) {
+                    createAndAddPendingToken(PythonLexer.DEDENT, _ffgToken);
+                } else {
 //                    IndentationErrorListener.lexerError(" line " + _ffgToken.getLine() +
 //                                                        ": \t unindent does not match any outer indentation level");
                 }

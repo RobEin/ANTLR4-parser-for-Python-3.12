@@ -52,11 +52,8 @@ class PythonLexerBase(Lexer):
         self._ffg_token: CommonToken = None # following (look ahead) token
 
     def nextToken(self) -> CommonToken: # reading the input stream until a return EOF
-        if self._input.size == 0:
-            return super().nextToken() # EOF token
-        else:
-            self.check_next_token()
-            return self._pending_tokens.pop(0) # add the queued token to the token stream
+        self.check_next_token()
+        return self._pending_tokens.pop(0) # add the queued token to the token stream
 
     def check_next_token(self):
         if self._previous_pending_token_type != Token.EOF:
@@ -145,8 +142,9 @@ class PythonLexerBase(Lexer):
             while cur_indent_length < prev_indent_length: # more than 1 DEDENT token may be inserted to the token stream
                 self._indent_lengths.popleft()
                 prev_indent_length = self._indent_lengths[0]
-                self.create_and_add_pending_token(self.DEDENT, self._ffg_token)
-                if cur_indent_length > prev_indent_length:
+                if cur_indent_length <= prev_indent_length:
+                    self.create_and_add_pending_token(self.DEDENT, self._ffg_token)
+                else:
                     pass
 #                    IndentationErrorListener.lexer_error(" line " + str(self._ffg_token.line)
 #                                                       + ": \t unindent does not match any outer indentation level")
