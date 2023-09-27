@@ -6,13 +6,13 @@
 Unix:
 ```bash
     cp ../*.g4 .
-    cp ../test.py .
+    cp ../examples/test.py .
 ```
 
 Windows:
 ```bash
     copy ..\*.g4
-    copy ..\test.py
+    copy ..\examples\test.py
 ```
 
 ```bash

@@ -25,12 +25,10 @@ THE SOFTWARE.
  * Developed by : Robert Einhorn
  */
 
-import java.util.*;
-
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.Lexer;
-import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.CommonToken;
+import org.antlr.v4.runtime.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.LinkedList;
 
 public abstract class PythonLexerBase extends Lexer {
     // A stack that keeps track of the indentation lengths
