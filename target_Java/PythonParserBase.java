@@ -11,8 +11,7 @@
 // !e
 // https://peps.python.org/pep-0617/#e-4
 
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.*;
 
 public abstract class PythonParserBase extends Parser {
     protected PythonParserBase(TokenStream input) {
