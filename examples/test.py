@@ -1,8 +1,1 @@
-i = 1
-match i:
-    case 1:
-        print("one")
-    case 2:
-        print("two")
-    case _:
-        print("other")
+print(f'math pi: {3.141:{".2f" if True else ".3f"}}')

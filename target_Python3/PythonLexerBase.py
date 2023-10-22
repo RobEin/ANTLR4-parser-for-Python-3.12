@@ -33,15 +33,21 @@ class PythonLexerBase(Lexer):
         super().__init__(input, output)
 
         # A stack that keeps track of the indentation lengths
-        self._indent_lengths: Deque[int] = deque()
+        #self._indent_lengths: Deque[int] = deque()
+        self._indent_lengths: list[int] = []
+
         # A list where tokens are waiting to be loaded into the token stream
         self._pending_tokens: list[CommonToken] = []
+
         # last pending token types
         self._previous_pending_token_type: int = 0
         self._last_pending_token_type_for_default_channel: int = 0
 
         # The amount of opened parentheses, square brackets or curly braces
         self._opened: int = 0
+        # The amount of opened curly brace in the current lexer mode
+        #self._paren_or_bracket_opened: Deque[int] = deque()
+        self._paren_or_bracket_opened: list[int] = []
 
         # Was there a space character in the indentations?
         self._was_space_indentation: bool = False
@@ -53,7 +59,7 @@ class PythonLexerBase(Lexer):
         self._cur_token: CommonToken = None # current (under processing) token
         self._ffg_token: CommonToken = None # following (look ahead) token
 
-        self._ERROR_: str = "!!! ERROR !!!  "
+        self._ERR_TXT: str = " ERROR: "
 
     def nextToken(self) -> CommonToken: # reading the input stream until a return EOF
         self.check_next_token()
@@ -74,19 +80,24 @@ class PythonLexerBase(Lexer):
                 case self.NEWLINE:
                     self.handle_NEWLINE_token()
                 case self.STRING:
-                    self.handle_STRING_token();
+                    self.handle_STRING_token()
+                case self.FSTRING_MIDDLE:
+                    self.handle_FSTRING_MIDDLE_token()
                 case self.ERROR_TOKEN:
-                    self.report_lexer_error("token recognition error at: '" + self._curToken.text + "'")
+                    self.report_lexer_error("token recognition error at: '" + self._cur_token.text + "'")
                     self.add_pending_token(self._cur_token)
                 case Token.EOF:
                     self.handle_EOF_token()
                 case other:
                     self.add_pending_token(self._cur_token)
+            self.handle_FORMAT_SPECIFICATION_MODE()
 
     def set_current_and_following_tokens(self):
         self._cur_token = super().nextToken() if self._ffg_token is None else \
                           self._ffg_token
 
+        self.handle_fstring_lexer_modes()
+        
         self._ffg_token = self._cur_token if self._cur_token.type == Token.EOF else \
                           super().nextToken()
 
@@ -117,7 +128,7 @@ class PythonLexerBase(Lexer):
                 err_msg: str = "first statement indented"
                 self.report_lexer_error(err_msg)
                 # insert an INDENT token before the first statement to raise an 'unexpected indent' error later by the parser
-                self.create_and_add_pending_token(self.INDENT, self._ERROR_ + err_msg, self._cur_token)
+                self.create_and_add_pending_token(self.INDENT, Token.DEFAULT_CHANNEL, self._ERR_TXT + err_msg, self._cur_token)
 
     def handle_NEWLINE_token(self):
         if self._opened > 0: # *** https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining
@@ -140,26 +151,30 @@ class PythonLexerBase(Lexer):
                         indentation_length: int = 0 if self._ffg_token.type == Token.EOF else \
                                                   self.get_indentation_length(self._cur_token.text)
 
-                        if indentation_length == self._INVALID_LENGTH:
-                            self.report_error("inconsistent use of tabs and spaces in indentation")
-                        else:
+                        if indentation_length != self._INVALID_LENGTH:
                             self.add_pending_token(self._cur_token) # WS token
                             self.insert_indent_or_dedent_token(indentation_length) # may insert INDENT token or DEDENT token(s)
+                        else:
+                            self.report_error("inconsistent use of tabs and spaces in indentation")
                     else: # We're at a newline followed by a statement (there is no whitespace before the statement)
                         self.insert_indent_or_dedent_token(0) # may insert DEDENT token(s)
 
     def insert_indent_or_dedent_token(self, cur_indent_length: int):
         # *** https://docs.python.org/3/reference/lexical_analysis.html#indentation
-        prev_indent_length: int = self._indent_lengths[0] # never has null value
+        #prev_indent_length: int = self._indent_lengths[0] # never has null value
+        prev_indent_length: int = self._indent_lengths[-1] # never has null value
         if cur_indent_length > prev_indent_length:
-            self.create_and_add_pending_token(self.INDENT, None, self._ffg_token)
-            self._indent_lengths.appendleft(cur_indent_length)
+            self.create_and_add_pending_token(self.INDENT, Token.DEFAULT_CHANNEL, None, self._ffg_token)
+            #self._indent_lengths.appendleft(cur_indent_length)
+            self._indent_lengths.append(cur_indent_length)
         else:
             while cur_indent_length < prev_indent_length: # more than 1 DEDENT token may be inserted to the token stream
-                self._indent_lengths.popleft()
-                prev_indent_length = self._indent_lengths[0]
+                #self._indent_lengths.popleft()
+                self._indent_lengths.pop()
+                #prev_indent_length = self._indent_lengths[0]
+                prev_indent_length = self._indent_lengths[-1]
                 if cur_indent_length <= prev_indent_length:
-                    self.create_and_add_pending_token(self.DEDENT, None, self._ffg_token)
+                    self.create_and_add_pending_token(self.DEDENT, Token.DEFAULT_CHANNEL, None, self._ffg_token)
                 else:
                     self.report_error("inconsistent dedent")
 
@@ -172,8 +187,64 @@ class PythonLexerBase(Lexer):
             originalSTRINGtoken: CommonToken = self._cur_token.clone() # backup the original token
             self._cur_token.text = line_joinFreeStringLiteral
             self.add_pending_token(self._cur_token)              # add the modified token with inline string literal
-            self.hide_and_add_pending_token(originalSTRINGtoken) # add the original token with hidden channel
+            self.hide_and_add_pending_token(originalSTRINGtoken) # add the original token to the hidden channel
             # this inserted hidden token allows to restore the original string literal with the \<newline> escape sequences
+
+    def handle_FSTRING_MIDDLE_token(self): # replace the double braces '{{' or '}}' to single braces and hide the second braces
+            fs_mid: str = self._cur_token.text
+            fs_mid = fs_mid.replace("{{", "{_").replace("}}", "}_") # replace: {{ --> {_    }} --> }_
+            arrOfStr: list[str] = re.split(r"(?<=[{}])_", fs_mid) # split by {_  or  }_
+            s: str
+            for s in arrOfStr:
+                if s:
+                    self.create_and_add_pending_token(self.FSTRING_MIDDLE, Token.DEFAULT_CHANNEL, s, self._ffg_token)
+                    lastCharacter: str = s[-1:]
+                    if lastCharacter in "{}":
+                        self.create_and_add_pending_token(self.FSTRING_MIDDLE, Token.HIDDEN_CHANNEL, lastCharacter, self._ffg_token)
+
+    def handle_fstring_lexer_modes(self):
+        if self._modeStack:
+            match self._cur_token.type:
+                case self.LBRACE: # OPEN_BRACE
+                    self.pushMode(Lexer.DEFAULT_MODE)
+                    self._paren_or_bracket_opened.append(0)
+                case self.LPAR | self.LSQB: # OPEN_PAREN | OPEN_BRACK
+                    # https://peps.python.org/pep-0498/#lambdas-inside-expressions
+                    self._paren_or_bracket_opened[-1] += 1 # increment the last element
+                case self.RPAR | self.RSQB: # CLOSE_PAREN | CLOSE_BRACK
+                    self._paren_or_bracket_opened[-1] -= 1 # decrement the last element
+                case self.COLON:
+                    if self._paren_or_bracket_opened[-1] == 0:
+                        match self._modeStack[-1]: # check the previous lexer mode (the current is DEFAULT_MODE)
+                            case self.SINGLE_QUOTE_FSTRING_MODE \
+                               | self.LONG_SINGLE_QUOTE_FSTRING_MODE \
+                               | self.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE:
+
+                                self.mode(self.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE) # continue in format spec. mode
+                            case self.DOUBLE_QUOTE_FSTRING_MODE \
+                               | self.LONG_DOUBLE_QUOTE_FSTRING_MODE \
+                               | self.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE:
+
+                                self.mode(self.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE) # continue in format spec. mode
+                case self.RBRACE: # CLOSE_BRACE
+                    match self._mode:
+                        case Lexer.DEFAULT_MODE \
+                           | self.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE \
+                           | self.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE:
+
+                            self.popMode()
+                            self._paren_or_bracket_opened.pop()
+                        case other:
+                            self.report_lexer_error("f-string: single '}' is not allowed")
+
+    def handle_FORMAT_SPECIFICATION_MODE(self):
+        if len(self._modeStack) != 0 \
+           and self._ffg_token.type == self.RBRACE:
+            
+            match self._cur_token.type:
+                case self.COLON | self.RBRACE:
+                    # insert an empty FSTRING_MIDDLE token instead of the missing format specification
+                    self.create_and_add_pending_token(self.FSTRING_MIDDLE, Token.DEFAULT_CHANNEL, "", self._ffg_token)
 
     def insert_trailing_tokens(self):
         match self._last_pending_token_type_for_default_channel:
@@ -181,23 +252,23 @@ class PythonLexerBase(Lexer):
                 pass # no trailing NEWLINE token is needed
             case other:
                 # insert an extra trailing NEWLINE token that serves as the end of the last statement
-                self.create_and_add_pending_token(self.NEWLINE, None, self._ffg_token)
+                self.create_and_add_pending_token(self.NEWLINE, Token.DEFAULT_CHANNEL, None, self._ffg_token) # _ffg_token is EOF
         self.insert_indent_or_dedent_token(0) # Now insert as much trailing DEDENT tokens as needed
 
     def handle_EOF_token(self):
         if self._last_pending_token_type_for_default_channel > 0:
             # there was statement in the input (leading NEWLINE tokens are hidden)
             self.insert_trailing_tokens()
-        self.add_pending_token(self._cur_token) # EOF token
+        self.add_pending_token(self._cur_token)
 
     def hide_and_add_pending_token(self, token: CommonToken):
         token.channel = Token.HIDDEN_CHANNEL # channel=1
         self.add_pending_token(token)
 
-    def create_and_add_pending_token(self, type: int, text: str, base_token: CommonToken):
+    def create_and_add_pending_token(self, type: int, channel: int, text: str, base_token: CommonToken):
         token: CommonToken = base_token.clone()
         token.type  = type
-        token.channel = Token.DEFAULT_CHANNEL
+        token.channel = channel
         token.stop = base_token.start - 1
         token.text = "<" + self.symbolicNames[type] + ">" if text is None else \
                      text
@@ -232,15 +303,17 @@ class PythonLexerBase(Lexer):
                     self._was_tab_indentation = True
                     length += TAB_LENGTH - (length % TAB_LENGTH)
 
-            if self._was_tab_indentation and self._was_space_indentation:
-                if not self._was_indentation_mixed_with_spaces_and_tabs:
-                    self._was_indentation_mixed_with_spaces_and_tabs = True
-                    return self._INVALID_LENGTH
+        if self._was_tab_indentation and self._was_space_indentation:
+            if not self._was_indentation_mixed_with_spaces_and_tabs:
+                self._was_indentation_mixed_with_spaces_and_tabs = True
+                return self._INVALID_LENGTH # only for the first inconsistent indent
         return length
 
     def report_lexer_error(self, err_msg):
-        self.getErrorListenerDispatch().syntaxError(self, self._cur_token, self._cur_token.line, self._cur_token.column, err_msg, None)
+        self.getErrorListenerDispatch().syntaxError(self, self._cur_token, self._cur_token.line, self._cur_token.column, self._ERR_TXT + err_msg, None)
 
     def report_error(self, err_msg):
         self.report_lexer_error(err_msg)
-        self.create_and_add_pending_token(self.ERROR_TOKEN, self._ERROR_ + err_msg, self._ffg_token)
+
+        # the ERROR_TOKEN will raise an error in the parser
+        self.create_and_add_pending_token(self.ERROR_TOKEN, Token.DEFAULT_CHANNEL, self._ERR_TXT + err_msg, self._ffg_token)

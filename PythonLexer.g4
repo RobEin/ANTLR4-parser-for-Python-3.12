@@ -23,19 +23,26 @@ THE SOFTWARE.
  /*
   * Project      : an ANTLR4 lexer grammar for Python 3
   *                https://github.com/RobEin/ANTLR4-Python-grammar-by-PEG
-  * Developed by : Bart Kiers, bart@big-o.nl
-  *                Robert Einhorn, robert.einhorn.hu@gmail.com
+  * Developed by : Robert Einhorn, robert.einhorn.hu@gmail.com
   */
 
 lexer grammar PythonLexer;
+
 options { superClass=PythonLexerBase; }
-tokens { INDENT, DEDENT } // https://docs.python.org/3.11/reference/lexical_analysis.html#indentation
+
+tokens {
+    INDENT, DEDENT // https://docs.python.org/3.12/reference/lexical_analysis.html#indentation
+  , FSTRING_START, FSTRING_MIDDLE, FSTRING_END // https://peps.python.org/pep-0701/#specification
+}
+
+
+// https://docs.python.org/3.12/reference/lexical_analysis.html
 
 /*
- * lexer rules    // https://docs.python.org/3.11/reference/lexical_analysis.html
+ *  default lexer mode
  */
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#keywords
+// https://docs.python.org/3.12/reference/lexical_analysis.html#keywords
 FALSE    : 'False';
 AWAIT    : 'await';
 ELSE     : 'else';
@@ -72,13 +79,13 @@ IF       : 'if';
 OR       : 'or';
 YIELD    : 'yield';
 
-// https://docs.python.org/3.11/library/token.html#token.OP
-LPAR             : '(';  // OPEN_PAREN
-LSQB             : '[';  // OPEN_BRACK
-LBRACE           : '{';  // OPEN_BRACE
-RPAR             : ')';  // CLOSE_PAREN
-RSQB             : ']';  // CLOSE_BRACK
-RBRACE           : '}';  // CLOSE_BRACE
+// https://docs.python.org/3.12/library/token.html#module-token
+LPAR             : '('; // OPEN_PAREN
+LSQB             : '['; // OPEN_BRACK
+LBRACE           : '{'; // OPEN_BRACE
+RPAR             : ')'; // CLOSE_PAREN
+RSQB             : ']'; // CLOSE_BRACK
+RBRACE           : '}'; // CLOSE_BRACE
 DOT              : '.';
 COLON            : ':';
 COMMA            : ',';
@@ -120,67 +127,108 @@ ATEQUAL          : '@=';
 RARROW           : '->';
 ELLIPSIS         : '...';
 COLONEQUAL       : ':=';
+EXCLAMATION      : '!';
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#identifiers
+// https://docs.python.org/3.12/reference/lexical_analysis.html#identifiers
 NAME
-   : ID_START ID_CONTINUE*
-   ;
+    : ID_START ID_CONTINUE*
+    ;
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#numeric-literals
+// https://docs.python.org/3.12/reference/lexical_analysis.html#numeric-literals
 NUMBER
-   : INTEGER
-   | FLOAT_NUMBER
-   | IMAG_NUMBER
-   ;
+    : INTEGER
+    | FLOAT_NUMBER
+    | IMAG_NUMBER
+    ;
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#string-and-bytes-literals
+// https://docs.python.org/3.12/reference/lexical_analysis.html#string-and-bytes-literals
 STRING
-   : STRING_LITERAL
-   | BYTES_LITERAL
-   ;
+    : STRING_LITERAL
+    | BYTES_LITERAL
+    ;
 
 // https://peps.python.org/pep-0484/#type-comments
 TYPE_COMMENT
-   : '#' WS? 'type:' ~[\r\n]*
-   ;
+    : '#' WS? 'type:' ~[\r\n]*
+    ;
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#physical-lines
+// https://docs.python.org/3.12/reference/lexical_analysis.html#physical-lines
 NEWLINE
-   : OS_INDEPENDENT_NL
-   ;
+    : OS_INDEPENDENT_NL
+    ;
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#comments
+// https://docs.python.org/3.12/reference/lexical_analysis.html#comments
 COMMENT : '#' ~[\r\n]*               -> channel(HIDDEN);
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#whitespace-between-tokens
+// https://docs.python.org/3.12/reference/lexical_analysis.html#whitespace-between-tokens
 WS : [ \t\f]+                        -> channel(HIDDEN);
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#explicit-line-joining
+// https://docs.python.org/3.12/reference/lexical_analysis.html#explicit-line-joining
 EXPLICIT_LINE_JOINING : '\\' NEWLINE -> channel(HIDDEN);
 
+// https://docs.python.org/3.12/reference/lexical_analysis.html#formatted-string-literals
+SINGLE_QUOTE_FSTRING_START      : F_STRING_PREFIX [']       -> type(FSTRING_START), pushMode(SINGLE_QUOTE_FSTRING_MODE);
+DOUBLE_QUOTE_FSTRING_START      : F_STRING_PREFIX ["]       -> type(FSTRING_START), pushMode(DOUBLE_QUOTE_FSTRING_MODE);
+LONG_SINGLE_QUOTE_FSTRING_START : F_STRING_PREFIX ['][']['] -> type(FSTRING_START), pushMode(LONG_SINGLE_QUOTE_FSTRING_MODE);
+LONG_DOUBLE_QUOTE_FSTRING_START : F_STRING_PREFIX ["]["]["] -> type(FSTRING_START), pushMode(LONG_DOUBLE_QUOTE_FSTRING_MODE);
 
-ERROR_TOKEN : . ; // catch unrecognized characters and redirect these errors to the parser
+ERROR_TOKEN : . ; // catch the unrecognized characters and redirect these errors to the parser
 
 
 /*
- * fragments
+ *  other lexer modes
  */
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#literals
+mode SINGLE_QUOTE_FSTRING_MODE;
+     SINGLE_QUOTE_FSTRING_END         : [']                          -> type(FSTRING_END), popMode;
+     SINGLE_QUOTE_FSTRING_MIDDLE      : SINGLE_QUOTE_FSTRING_LITERAL -> type(FSTRING_MIDDLE);
+     SINGLE_QUOTE_FSTRING_LBRACE      : '{'                          -> type(LBRACE); // will be closed in DEFAULT_MODE or SINGLE_QUOTE_FORMAT_SPECIFICATION_RBRACE
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#string-and-bytes-literals
+mode DOUBLE_QUOTE_FSTRING_MODE;
+     DOUBLE_QUOTE_FSTRING_END         : ["]                          -> type(FSTRING_END), popMode;
+     DOUBLE_QUOTE_FSTRING_MIDDLE      : DOUBLE_QUOTE_FSTRING_LITERAL -> type(FSTRING_MIDDLE);
+     DOUBLE_QUOTE_FSTRING_LBRACE      : '{'                          -> type(LBRACE); // will be closed in DEFAULT_MODE or DOUBLE_QUOTE_FORMAT_SPECIFICATION_RBRACE
+
+mode LONG_SINGLE_QUOTE_FSTRING_MODE;
+     LONG_SINGLE_QUOTE_FSTRING_END    : [']['][']                    -> type(FSTRING_END), popMode;
+     LONG_SINGLE_QUOTE_FSTRING_MIDDLE : SINGLE_QUOTE_FSTRING_LITERAL -> type(FSTRING_MIDDLE);
+     LONG_SINGLE_QUOTE_FSTRING_LBRACE : '{'                          -> type(LBRACE); // will be closed in DEFAULT_MODE or SINGLE_QUOTE_FORMAT_SPECIFICATION_RBRACE
+
+mode LONG_DOUBLE_QUOTE_FSTRING_MODE;
+     LONG_DOUBLE_QUOTE_FSTRING_END    : ["]["]["]                    -> type(FSTRING_END), popMode;
+     LONG_DOUBLE_QUOTE_FSTRING_MIDDLE : DOUBLE_QUOTE_FSTRING_LITERAL -> type(FSTRING_MIDDLE);
+     LONG_DOUBLE_QUOTE_FSTRING_LBRACE : '{'                          -> type(LBRACE); // will be closed in DEFAULT_MODE or DOUBLE_QUOTE_FORMAT_SPECIFICATION_RBRACE
+
+mode SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE; // only used after a format specifier colon
+     SINGLE_QUOTE_FORMAT_SPECIFICATION_FSTRING_MIDDLE : FORMAT_SPEC_CHAR_NO_SINGLE_QUOTE+ -> type(FSTRING_MIDDLE);
+     SINGLE_QUOTE_FORMAT_SPECIFICATION_LBRACE : '{'                                       -> type(LBRACE); // will be closed in DEFAULT_MODE    by PythonLexerBase class
+     SINGLE_QUOTE_FORMAT_SPECIFICATION_RBRACE : '}'                                       -> type(RBRACE); // popMode to ..._QUOTE_FSTRING_MODE by PythonLexerBase class
+
+mode DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE; // only used after a format specifier colon
+     DOUBLE_QUOTE_FORMAT_SPECIFICATION_FSTRING_MIDDLE : FORMAT_SPEC_CHAR_NO_DOUBLE_QUOTE+ -> type(FSTRING_MIDDLE);
+     DOUBLE_QUOTE_FORMAT_SPECIFICATION_LBRACE : '{'                                       -> type(LBRACE); // will be closed in DEFAULT_MODE    by PythonLexerBase class
+     DOUBLE_QUOTE_FORMAT_SPECIFICATION_RBRACE : '}'                                       -> type(RBRACE); // popMode to ..._QUOTE_FSTRING_MODE by PythonLexerBase class
+
+
+/*
+ *  fragments
+ */
+
+// https://docs.python.org/3.12/reference/lexical_analysis.html#literals
+
+// https://docs.python.org/3.12/reference/lexical_analysis.html#string-and-bytes-literals
 fragment STRING_LITERAL : STRING_PREFIX? (SHORT_STRING | LONG_STRING);
-fragment STRING_PREFIX  : 'r' | 'u' | 'R' | 'U' | 'f' | 'F' | 'fr' | 'Fr' | 'fR' | 'FR' | 'rf' | 'rF' | 'Rf' | 'RF';
+fragment STRING_PREFIX  : 'r' | 'u' | 'R' | 'U';
 
 fragment SHORT_STRING
-   : '\'' SHORT_STRING_ITEM_FOR_SINGLE_QUOTE* '\''
-   | '"'  SHORT_STRING_ITEM_FOR_DOUBLE_QUOTE* '"'
-   ;
+    : '\'' SHORT_STRING_ITEM_FOR_SINGLE_QUOTE* '\''
+    | '"'  SHORT_STRING_ITEM_FOR_DOUBLE_QUOTE* '"'
+    ;
 
 fragment LONG_STRING
-   : '\'\'\'' LONG_STRING_ITEM*? '\'\'\''
-   | '"""'    LONG_STRING_ITEM*? '"""'
-   ;
+    : '\'\'\'' LONG_STRING_ITEM*? '\'\'\''
+    | '"""'    LONG_STRING_ITEM*? '"""'
+    ;
 
 fragment SHORT_STRING_ITEM_FOR_SINGLE_QUOTE : SHORT_STRING_CHAR_NO_SINGLE_QUOTE | STRING_ESCAPE_SEQ;
 fragment SHORT_STRING_ITEM_FOR_DOUBLE_QUOTE : SHORT_STRING_CHAR_NO_DOUBLE_QUOTE | STRING_ESCAPE_SEQ;
@@ -193,22 +241,22 @@ fragment SHORT_STRING_CHAR_NO_DOUBLE_QUOTE : ~[\\\r\n"];       // <any source ch
 fragment LONG_STRING_CHAR  : ~'\\';                            // <any source character except "\">
 
 fragment STRING_ESCAPE_SEQ
-   : '\\' OS_INDEPENDENT_NL // \<newline> escape sequence
-   | '\\' .                                                    // "\" <any source character>
-   ; // the \<newline> (not \n) escape sequences will be removed from the string literals by the PythonLexerBase class
+    : '\\' OS_INDEPENDENT_NL // \<newline> escape sequence
+    | '\\' .                                                    // "\" <any source character>
+    ; // the \<newline> (not \n) escape sequences will be removed from the string literals by the PythonLexerBase class
 
-fragment BYTES_LITERAL : BYTES_PREFIX(SHORT_BYTES | LONG_BYTES);
+fragment BYTES_LITERAL : BYTES_PREFIX (SHORT_BYTES | LONG_BYTES);
 fragment BYTES_PREFIX  : 'b' | 'B' | 'br' | 'Br' | 'bR' | 'BR' | 'rb' | 'rB' | 'Rb' | 'RB';
 
 fragment SHORT_BYTES
-   : '\'' SHORT_BYTES_ITEM_FOR_SINGLE_QUOTE* '\''
-   | '"'  SHORT_BYTES_ITEM_FOR_DOUBLE_QUOTE* '"'
-   ;
+    : '\'' SHORT_BYTES_ITEM_FOR_SINGLE_QUOTE* '\''
+    | '"'  SHORT_BYTES_ITEM_FOR_DOUBLE_QUOTE* '"'
+    ;
 
 fragment LONG_BYTES
-   : '\'\'\'' LONG_BYTES_ITEM*? '\'\'\''
-   | '"""'    LONG_BYTES_ITEM*? '"""'
-   ;
+    : '\'\'\'' LONG_BYTES_ITEM*? '\'\'\''
+    | '"""'    LONG_BYTES_ITEM*? '"""'
+    ;
 
 fragment SHORT_BYTES_ITEM_FOR_SINGLE_QUOTE :  SHORT_BYTES_CHAR_NO_SINGLE_QUOTE | BYTES_ESCAPE_SEQ;
 fragment SHORT_BYTES_ITEM_FOR_DOUBLE_QUOTE :  SHORT_BYTES_CHAR_NO_DOUBLE_QUOTE | BYTES_ESCAPE_SEQ;
@@ -216,25 +264,35 @@ fragment SHORT_BYTES_ITEM_FOR_DOUBLE_QUOTE :  SHORT_BYTES_CHAR_NO_DOUBLE_QUOTE |
 fragment LONG_BYTES_ITEM  : LONG_BYTES_CHAR | BYTES_ESCAPE_SEQ;
 
 fragment SHORT_BYTES_CHAR_NO_SINGLE_QUOTE                      // <any ASCII character except "\" or newline or single quote>
- : [\u0000-\u0009]
- | [\u000B-\u000C]
- | [\u000E-\u0026]
- | [\u0028-\u005B]
- | [\u005D-\u007F]
- ;
+    : [\u0000-\u0009]
+    | [\u000B-\u000C]
+    | [\u000E-\u0026]
+    | [\u0028-\u005B]
+    | [\u005D-\u007F]
+    ;
 
 fragment SHORT_BYTES_CHAR_NO_DOUBLE_QUOTE                      // <any ASCII character except "\" or newline or double quote>
- : [\u0000-\u0009]
- | [\u000B-\u000C]
- | [\u000E-\u0021]
- | [\u0023-\u005B]
- | [\u005D-\u007F]
- ;
+    : [\u0000-\u0009]
+    | [\u000B-\u000C]
+    | [\u000E-\u0021]
+    | [\u0023-\u005B]
+    | [\u005D-\u007F]
+    ;
 
 fragment LONG_BYTES_CHAR  : [\u0000-\u005B] | [\u005D-\u007F]; // <any ASCII character except "\">
 fragment BYTES_ESCAPE_SEQ : '\\' [\u0000-\u007F];              // "\" <any ASCII character>
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#integer-literals
+// https://docs.python.org/3.12/library/string.html#format-specification-mini-language
+fragment SINGLE_QUOTE_FSTRING_LITERAL : (FORMAT_SPEC_CHAR_NO_SINGLE_QUOTE | DOUBLE_BRACES)+;
+fragment DOUBLE_QUOTE_FSTRING_LITERAL : (FORMAT_SPEC_CHAR_NO_DOUBLE_QUOTE | DOUBLE_BRACES)+;
+
+// https://docs.python.org/3.12/reference/lexical_analysis.html#formatted-string-literals
+fragment F_STRING_PREFIX  : 'f' | 'F' | 'fr' | 'Fr' | 'fR' | 'FR' | 'rf' | 'rF' | 'Rf' | 'RF';
+fragment FORMAT_SPEC_CHAR_NO_SINGLE_QUOTE : ~[{}'];
+fragment FORMAT_SPEC_CHAR_NO_DOUBLE_QUOTE : ~[{}"];
+fragment DOUBLE_BRACES : '{{' | '}}';
+
+// https://docs.python.org/3.12/reference/lexical_analysis.html#integer-literals
 fragment INTEGER        : DEC_INTEGER | BIN_INTEGER | OCT_INTEGER | HEX_INTEGER;
 fragment DEC_INTEGER    : NON_ZERO_DIGIT ('_'? DIGIT)* | '0'+ ('_'? '0')*;
 fragment BIN_INTEGER    : '0' ('b' | 'B') ('_'? BIN_DIGIT)+;
@@ -246,7 +304,7 @@ fragment BIN_DIGIT      : '0' | '1';
 fragment OCT_DIGIT      : [0-7];
 fragment HEX_DIGIT      : DIGIT | [a-f] | [A-F];
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#floating-point-literals
+// https://docs.python.org/3.12/reference/lexical_analysis.html#floating-point-literals
 fragment FLOAT_NUMBER   : POINT_FLOAT | EXPONENT_FLOAT;
 fragment POINT_FLOAT    : DIGIT_PART? FRACTION | DIGIT_PART '.';
 fragment EXPONENT_FLOAT : (DIGIT_PART | POINT_FLOAT) EXPONENT;
@@ -254,10 +312,10 @@ fragment DIGIT_PART     : DIGIT ('_'? DIGIT)*;
 fragment FRACTION       : '.' DIGIT_PART;
 fragment EXPONENT       : ('e' | 'E') ('+' | '-')? DIGIT_PART;
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#imaginary-literals
+// https://docs.python.org/3.12/reference/lexical_analysis.html#imaginary-literals
 fragment IMAG_NUMBER : (FLOAT_NUMBER | DIGIT_PART) ('j' | 'J');
 
-// https://docs.python.org/3.11/reference/lexical_analysis.html#physical-lines
+// https://docs.python.org/3.12/reference/lexical_analysis.html#physical-lines
 fragment OS_INDEPENDENT_NL : '\r'? '\n'; // Unix, Windows
 
 fragment ID_CONTINUE // based on: https://github.com/asmeurer/python-unicode-variable-names

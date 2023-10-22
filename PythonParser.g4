@@ -26,7 +26,7 @@ THE SOFTWARE.
   * Developed by : Robert Einhorn
   */
 
-parser grammar PythonParser; // Python 3.11.5    https://docs.python.org/3.11/reference/grammar.html
+parser grammar PythonParser; // Python 3.12.0  https://docs.python.org/3.12/reference/grammar.html#full-grammar-specification
 options {
     tokenVocab=PythonLexer;
     superClass=PythonParserBase;
@@ -39,7 +39,7 @@ file_input: statements? EOF;
 interactive: statement_newline;
 eval: expressions NEWLINE* EOF;
 func_type: '(' type_expressions? ')' '->' expression NEWLINE* EOF;
-fstring: star_expressions;
+fstring_input: star_expressions;
 
 // GENERAL STATEMENTS
 // ==================
@@ -62,6 +62,7 @@ simple_stmts
 // will throw a SyntaxError.
 simple_stmt
     : assignment
+    | type_alias
     | star_expressions
     | return_stmt
     | import_stmt
@@ -131,7 +132,9 @@ yield_stmt: yield_expr;
 
 assert_stmt: 'assert' expression (',' expression )?;
 
-import_stmt: import_name | import_from;
+import_stmt
+    : import_name
+    | import_from;
 
 // Import statements
 // -----------------
@@ -177,7 +180,7 @@ class_def
     | class_def_raw;
 
 class_def_raw
-    : 'class' NAME ('(' arguments? ')' )? ':' block;
+    : 'class' NAME type_params? ('(' arguments? ')' )? ':' block;
 
 // Function definitions
 // --------------------
@@ -187,8 +190,8 @@ function_def
     | function_def_raw;
 
 function_def_raw
-    : ASYNC? 'def' NAME '(' params? ')' ('->' expression )? ':' func_type_comment? block
-    ;
+    : 'def' NAME type_params? '(' params? ')' ('->' expression )? ':' func_type_comment? block
+    | ASYNC 'def' NAME type_params? '(' params? ')' ('->' expression )? ':' func_type_comment? block;
 
 // Function parameters
 // -------------------
@@ -282,10 +285,10 @@ for_stmt
 // --------------
 
 with_stmt
-    : ASYNC? 'with' '(' with_item (',' with_item)* ','? ')' ':' block
-    | ASYNC? 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block
+    : ASYNC? 'with' ( '(' with_item (',' with_item)* ','? ')' ':'
+                    | with_item (',' with_item)* ':' TYPE_COMMENT?
+                    ) block
     ;
-
 
 with_item
     : expression ('as' star_target)?
@@ -427,9 +430,9 @@ star_pattern
     | '*' wildcard_pattern;
 
 mapping_pattern
-    : '{' '}'
-    | '{' double_star_pattern ','? '}'
-    | '{' items_pattern (',' double_star_pattern)? ','? '}'
+    : LBRACE RBRACE
+    | LBRACE double_star_pattern ','? RBRACE
+    | LBRACE items_pattern (',' double_star_pattern)? ','? RBRACE
     ;
 
 items_pattern
@@ -455,6 +458,28 @@ keyword_patterns
 
 keyword_pattern
     : NAME '=' pattern;
+
+// Type statement
+// ---------------
+
+type_alias
+    : soft_kw_type NAME type_params? '=' expression;
+
+// Type parameter declaration
+// --------------------------
+
+type_params: '[' type_param_seq  ']';
+
+type_param_seq: type_param (',' type_param)* ','?;
+
+type_param
+    : NAME type_param_bound?
+    | '*'  NAME (':' expression)?
+    | '**' NAME (':' expression)?
+    ;
+
+
+type_param_bound: ':' expression;
 
 // EXPRESSIONS
 // -----------
@@ -673,7 +698,23 @@ lambda_param: NAME;
 // LITERALS
 // ========
 
-strings: STRING+;
+fstring_middle
+    : fstring_replacement_field
+    | FSTRING_MIDDLE;
+fstring_replacement_field
+    : LBRACE (yield_expr | star_expressions) '='? fstring_conversion? fstring_full_format_spec? RBRACE;
+fstring_conversion
+    : '!' NAME;
+fstring_full_format_spec
+    : ':' fstring_format_spec*;
+fstring_format_spec
+    : FSTRING_MIDDLE
+    | fstring_replacement_field;
+fstring
+    : FSTRING_START fstring_middle* FSTRING_END;
+
+string: STRING;
+strings: (fstring|string)+;
 
 list
     : '[' star_named_expressions? ']';
@@ -681,13 +722,13 @@ list
 tuple
     : '(' (star_named_expression ',' star_named_expressions?  )? ')';
 
-set: '{' star_named_expressions '}';
+set: LBRACE star_named_expressions RBRACE;
 
 // Dicts
 // -----
 
 dict
-    : '{' double_starred_kvpairs? '}';
+    : LBRACE double_starred_kvpairs? RBRACE;
 
 double_starred_kvpairs: double_starred_kvpair (',' double_starred_kvpair)* ','?;
 
@@ -711,13 +752,13 @@ listcomp
     : '[' named_expression for_if_clauses ']';
 
 setcomp
-    : '{' named_expression for_if_clauses '}';
+    : LBRACE named_expression for_if_clauses RBRACE;
 
 genexp
     : '(' ( assignment_expression | expression) for_if_clauses ')';
 
 dictcomp
-    : '{' kvpair for_if_clauses '}';
+    : LBRACE kvpair for_if_clauses RBRACE;
 
 // FUNCTION CALL ARGUMENTS
 // =======================
@@ -828,9 +869,10 @@ func_type_comment
     : NEWLINE TYPE_COMMENT   // Must be followed by indented block
     | TYPE_COMMENT;
 
-// *** Soft Keywords:  https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
-soft_kw_match    : {self.isEqualCurrentTokenText("match")}? NAME;
-soft_kw_case     : {self.isEqualCurrentTokenText("case")}?  NAME;
-soft_kw_wildcard : {self.isEqualCurrentTokenText("_")}?     NAME;
+// *** Soft Keywords:  https://docs.python.org/3.12/reference/lexical_analysis.html#soft-keywords
+soft_kw_match       : {self.isEqualCurrentTokenText("match")}? NAME;
+soft_kw_case        : {self.isEqualCurrentTokenText("case")}?  NAME;
+soft_kw_wildcard    : {self.isEqualCurrentTokenText("_")}?     NAME;
+soft_kw_type        : {self.isEqualCurrentTokenText("type")}?  NAME;
 
 // ========================= END OF THE GRAMMAR ===========================

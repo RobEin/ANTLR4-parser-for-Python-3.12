@@ -1,4 +1,4 @@
-# ANTLR4 parser for Python 3.11.5 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# ANTLR4 parser for Python 3.12.0 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ### About files:
  - PythonParser.g4
@@ -7,7 +7,7 @@
  - PythonLexerBase.java
    handles the Python indentations.
 
-- Example files: Python 3.11.5 Standard Lib
+- Example files: Python 3.12.0 Standard Lib
  
 
 ### Related links:
@@ -17,7 +17,7 @@
 
 [ANTLR 4 Runtime API](https://www.antlr.org/api/Java/)
 
-[Python 3.11 Lexical Analysis](https://docs.python.org/3.11/reference/lexical_analysis.html)
+[Python 3.12.0 Lexical Analysis](https://docs.python.org/3.12/reference/lexical_analysis.html)
 
 [cpython](https://github.com/python/cpython)
 
