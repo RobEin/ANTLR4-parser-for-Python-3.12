@@ -22,7 +22,7 @@ THE SOFTWARE.
 
  /*
   * Project      : an ANTLR4 parser grammar by the official PEG grammar
-  *                https://github.com/RobEin/ANTLR4-Python-grammar-by-PEG
+  *                https://github.com/RobEin/ANTLR4-parser-for-Python-3.12
   * Developed by : Robert Einhorn
   */
 
