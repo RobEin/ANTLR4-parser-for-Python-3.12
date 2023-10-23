@@ -24,6 +24,7 @@ THE SOFTWARE.
   * Project      : an ANTLR4 parser grammar by the official PEG grammar
   *                https://github.com/RobEin/ANTLR4-parser-for-Python-3.12
   * Developed by : Robert Einhorn
+  *
   */
 
 parser grammar PythonParser; // Python 3.12.0  https://docs.python.org/3.12/reference/grammar.html#full-grammar-specification

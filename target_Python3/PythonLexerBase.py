@@ -21,7 +21,6 @@
 # 
 # Developed by : Robert Einhorn
 
-from collections import deque
 from typing import TextIO
 from antlr4 import InputStream, Lexer, Token
 from antlr4.Token import CommonToken
@@ -33,7 +32,6 @@ class PythonLexerBase(Lexer):
         super().__init__(input, output)
 
         # A stack that keeps track of the indentation lengths
-        #self._indent_lengths: Deque[int] = deque()
         self._indent_lengths: list[int] = []
 
         # A list where tokens are waiting to be loaded into the token stream
@@ -161,17 +159,13 @@ class PythonLexerBase(Lexer):
 
     def insert_indent_or_dedent_token(self, cur_indent_length: int):
         # *** https://docs.python.org/3/reference/lexical_analysis.html#indentation
-        #prev_indent_length: int = self._indent_lengths[0] # never has null value
         prev_indent_length: int = self._indent_lengths[-1] # never has null value
         if cur_indent_length > prev_indent_length:
             self.create_and_add_pending_token(self.INDENT, Token.DEFAULT_CHANNEL, None, self._ffg_token)
-            #self._indent_lengths.appendleft(cur_indent_length)
             self._indent_lengths.append(cur_indent_length)
         else:
             while cur_indent_length < prev_indent_length: # more than 1 DEDENT token may be inserted to the token stream
-                #self._indent_lengths.popleft()
                 self._indent_lengths.pop()
-                #prev_indent_length = self._indent_lengths[0]
                 prev_indent_length = self._indent_lengths[-1]
                 if cur_indent_length <= prev_indent_length:
                     self.create_and_add_pending_token(self.DEDENT, Token.DEFAULT_CHANNEL, None, self._ffg_token)
