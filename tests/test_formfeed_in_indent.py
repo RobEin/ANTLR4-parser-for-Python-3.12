@@ -4,5 +4,5 @@
 # REQUIREMENT: no error message
 
 if True:
-    i = 1 # formfeed in indent
-    j = 1
+     i = 1 # the indentation length starts after the last formfeed
+  j = 1

@@ -43,16 +43,13 @@ class PythonLexerBase(Lexer):
 
         # The amount of opened parentheses, square brackets or curly braces
         self._opened: int = 0
-        # The amount of opened curly brace in the current lexer mode
-        #self._paren_or_bracket_opened: Deque[int] = deque()
+        # The amount of opened parentheses and square brackets in the current lexer mode
         self._paren_or_bracket_opened: list[int] = []
 
-        # Was there a space character in the indentations?
         self._was_space_indentation: bool = False
-        # Was there a tab character in the indentations?
         self._was_tab_indentation: bool = False
         self._was_indentation_mixed_with_spaces_and_tabs: bool = False
-        self._INVALID_LENGTH: int = -1 # invalid length for mixed indentations with spaces and tabs 
+        self._INVALID_LENGTH: int = -1
 
         self._cur_token: CommonToken = None # current (under processing) token
         self._ffg_token: CommonToken = None # following (look ahead) token
@@ -69,10 +66,10 @@ class PythonLexerBase(Lexer):
             if len(self._indent_lengths) == 0: # We're at the first token
                 self.handle_start_of_input()
             match self._cur_token.type:
-                case self.LPAR | self.LSQB | self.LBRACE: # OPEN_PAREN | OPEN_BRACK | OPEN_BRACE
+                case self.LPAR | self.LSQB | self.LBRACE:
                     self._opened += 1
                     self.add_pending_token(self._cur_token)
-                case self.RPAR | self.RSQB | self.RBRACE: # CLOSE_PAREN | CLOSE_BRACK | CLOSE_BRACE
+                case self.RPAR | self.RSQB | self.RBRACE:
                     self._opened -= 1
                     self.add_pending_token(self._cur_token)
                 case self.NEWLINE:
@@ -129,8 +126,8 @@ class PythonLexerBase(Lexer):
                 self.create_and_add_pending_token(self.INDENT, Token.DEFAULT_CHANNEL, self._ERR_TXT + err_msg, self._cur_token)
 
     def handle_NEWLINE_token(self):
-        if self._opened > 0: # *** https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining
-            self.hide_and_add_pending_token(self._cur_token) # We're in an implicit line joining, ignore the current NEWLINE token
+        if self._opened > 0: # We're in an implicit line joining, ignore the current NEWLINE token
+            self.hide_and_add_pending_token(self._cur_token)
         else:
             nl_token: CommonToken = self._cur_token # save the current NEWLINE token
             is_looking_ahead: bool = self._ffg_token.type == self.WS
@@ -158,8 +155,7 @@ class PythonLexerBase(Lexer):
                         self.insert_indent_or_dedent_token(0) # may insert DEDENT token(s)
 
     def insert_indent_or_dedent_token(self, cur_indent_length: int):
-        # *** https://docs.python.org/3/reference/lexical_analysis.html#indentation
-        prev_indent_length: int = self._indent_lengths[-1] # never has null value
+        prev_indent_length: int = self._indent_lengths[-1]
         if cur_indent_length > prev_indent_length:
             self.create_and_add_pending_token(self.INDENT, Token.DEFAULT_CHANNEL, None, self._ffg_token)
             self._indent_lengths.append(cur_indent_length)
@@ -174,7 +170,7 @@ class PythonLexerBase(Lexer):
 
     def handle_STRING_token(self): # remove the \<newline> escape sequences from the string literal
         # https://docs.python.org/3.11/reference/lexical_analysis.html#string-and-bytes-literals
-        line_joinFreeStringLiteral: str = re.sub("\\\\\\r?\\n", "", self._cur_token.text)
+        line_joinFreeStringLiteral: str = re.sub(r"\\\r?\n", "", self._cur_token.text)
         if len(self._cur_token.text) == len(line_joinFreeStringLiteral):
             self.add_pending_token(self._cur_token)
         else:
@@ -199,13 +195,13 @@ class PythonLexerBase(Lexer):
     def handle_fstring_lexer_modes(self):
         if self._modeStack:
             match self._cur_token.type:
-                case self.LBRACE: # OPEN_BRACE
+                case self.LBRACE:
                     self.pushMode(Lexer.DEFAULT_MODE)
                     self._paren_or_bracket_opened.append(0)
-                case self.LPAR | self.LSQB: # OPEN_PAREN | OPEN_BRACK
+                case self.LPAR | self.LSQB:
                     # https://peps.python.org/pep-0498/#lambdas-inside-expressions
                     self._paren_or_bracket_opened[-1] += 1 # increment the last element
-                case self.RPAR | self.RSQB: # CLOSE_PAREN | CLOSE_BRACK
+                case self.RPAR | self.RSQB:
                     self._paren_or_bracket_opened[-1] -= 1 # decrement the last element
                 case self.COLON:
                     if self._paren_or_bracket_opened[-1] == 0:
@@ -220,7 +216,7 @@ class PythonLexerBase(Lexer):
                                | self.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE:
 
                                 self.mode(self.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE) # continue in format spec. mode
-                case self.RBRACE: # CLOSE_BRACE
+                case self.RBRACE:
                     match self._mode:
                         case Lexer.DEFAULT_MODE \
                            | self.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE \
@@ -256,7 +252,7 @@ class PythonLexerBase(Lexer):
         self.add_pending_token(self._cur_token)
 
     def hide_and_add_pending_token(self, token: CommonToken):
-        token.channel = Token.HIDDEN_CHANNEL # channel=1
+        token.channel = Token.HIDDEN_CHANNEL
         self.add_pending_token(token)
 
     def create_and_add_pending_token(self, type: int, channel: int, text: str, base_token: CommonToken):
@@ -274,28 +270,22 @@ class PythonLexerBase(Lexer):
         self._previous_pending_token_type = token.type
         if token.channel == Token.DEFAULT_CHANNEL:
             self._last_pending_token_type_for_default_channel = self._previous_pending_token_type
-        self._pending_tokens.append(token) # the token will be added to the token stream
+        self._pending_tokens.append(token)
 
-    # Calculates the indentation of the provided spaces, taking the
-    # following rules into account:
-    # 
-    # "Tabs are replaced (from left to right) by one to eight spaces
-    #  such that the total number of characters up to and including
-    #  the replacement is a multiple of eight [...]"
-    # 
-    #  -- https://docs.python.org/3/reference/lexical_analysis.html#indentation
     def get_indentation_length(self, textWS: str) -> int: # the textWS may contain spaces, tabs or formfeeds
         TAB_LENGTH: int = 8 # the standard number of spaces to replace a tab to spaces
         length: int = 0
         ch: str
         for ch in textWS:
             match ch:
-                case ' ': # A normal space char
+                case ' ':
                     self._was_space_indentation = True
                     length += 1
                 case '\t':
                     self._was_tab_indentation = True
                     length += TAB_LENGTH - (length % TAB_LENGTH)
+                case '\f': # formfeed
+                    length = 0
 
         if self._was_tab_indentation and self._was_space_indentation:
             if not self._was_indentation_mixed_with_spaces_and_tabs:

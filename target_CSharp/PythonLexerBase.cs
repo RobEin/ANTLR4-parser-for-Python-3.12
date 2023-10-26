@@ -45,15 +45,13 @@ public abstract class PythonLexerBase : Lexer
 
     // The amount of opened parentheses, square brackets, or curly braces
     private int _opened = 0;
-    // The amount of opened curly brace in the current lexer mode
+    //  The amount of opened parentheses and square brackets in the current lexer mode
     private readonly LinkedList<int> _paren_or_bracketOpened = new LinkedList<int>();
 
-    // Was there a space character in the indentations?
     private bool _wasSpaceIndentation = false;
-    // Was there a tab character in the indentations?
     private bool _wasTabIndentation = false;
     private bool _wasIndentationMixedWithSpacesAndTabs = false;
-    private const int INVALID_LENGTH = -1; // invalid length for mixed indentations with spaces and tabs
+    private const int INVALID_LENGTH = -1;
 
     private CommonToken _curToken = null!; // current (under processing) token
     private IToken _ffgToken = null!;      // following (look ahead) token
@@ -88,15 +86,15 @@ public abstract class PythonLexerBase : Lexer
 
             switch (_curToken.Type)
             {
-                case PythonLexer.LPAR:   // OPEN_PAREN
-                case PythonLexer.LSQB:   // OPEN_BRACK
-                case PythonLexer.LBRACE: // OPEN_BRACE
+                case PythonLexer.LPAR:
+                case PythonLexer.LSQB:
+                case PythonLexer.LBRACE:
                     _opened++;
                     AddPendingToken(_curToken);
                     break;
-                case PythonLexer.RPAR:   // CLOSE_PAREN
-                case PythonLexer.RSQB:   // CLOSE_BRACK
-                case PythonLexer.RBRACE: // CLOSE_BRACE
+                case PythonLexer.RPAR:
+                case PythonLexer.RSQB:
+                case PythonLexer.RBRACE:
                     _opened--;
                     AddPendingToken(_curToken);
                     break;
@@ -187,8 +185,8 @@ public abstract class PythonLexerBase : Lexer
     {
         if (_opened > 0)
         {
-            //*** https://docs.python.org/3/reference/lexical_analysis.html#implicit-line-joining
-            HideAndAddPendingToken(_curToken); // We're in an implicit line joining, ignore the current NEWLINE token
+            // We're in an implicit line joining, ignore the current NEWLINE token
+            HideAndAddPendingToken(_curToken);
         }
         else
         {
@@ -204,7 +202,7 @@ public abstract class PythonLexerBase : Lexer
                 case PythonLexer.NEWLINE:      // We're before a blank line
                 case PythonLexer.COMMENT:      // We're before a comment
                 case PythonLexer.TYPE_COMMENT: // We're before a type comment
-                    HideAndAddPendingToken(nlToken); // ignore the NEWLINE token
+                    HideAndAddPendingToken(nlToken);
                     if (isLookingAhead)
                     {
                         AddPendingToken(_curToken);  // WS token
@@ -241,7 +239,7 @@ public abstract class PythonLexerBase : Lexer
     private void InsertIndentOrDedentToken(int curIndentLength)
     {
         //*** https://docs.python.org/3/reference/lexical_analysis.html#indentation
-        int prevIndentLength = _indentLengths.Last.Value; // never has a null value
+        int prevIndentLength = _indentLengths.Last.Value;
         if (curIndentLength > prevIndentLength)
         {
             CreateAndAddPendingToken(PythonLexer.INDENT, TokenConstants.DefaultChannel, null, _ffgToken);
@@ -252,7 +250,7 @@ public abstract class PythonLexerBase : Lexer
             while (curIndentLength < prevIndentLength)
             { // more than 1 DEDENT token may be inserted into the token stream
                 _indentLengths.RemoveLast();
-                prevIndentLength = _indentLengths.Last.Value; // never has a null value
+                prevIndentLength = _indentLengths.Last.Value;
                 if (curIndentLength <= prevIndentLength)
                 {
                     CreateAndAddPendingToken(PythonLexer.DEDENT, TokenConstants.DefaultChannel, null, _ffgToken);
@@ -269,7 +267,7 @@ public abstract class PythonLexerBase : Lexer
     {
         // remove the \<newline> escape sequences from the string literal
         // https://docs.python.org/3.11/reference/lexical_analysis.html#string-and-bytes-literals
-        string line_joinFreeStringLiteral = Regex.Replace(_curToken.Text, "\\\\r?\\n", "");
+        string line_joinFreeStringLiteral = Regex.Replace(_curToken.Text, @"\\\r?\n", "");
         if (_curToken.Text.Length == line_joinFreeStringLiteral.Length)
         {
             AddPendingToken(_curToken);
@@ -284,12 +282,12 @@ public abstract class PythonLexerBase : Lexer
         }
     }
 
-    private void HandleFSTRING_MIDDLE_token()
+    private void HandleFSTRING_MIDDLE_token() // replace the double braces '{{' or '}}' to single braces and hide the second braces
     {
         string fsMid = _curToken.Text;
-        fsMid = fsMid.Replace("{{", "{_").Replace("}}", "}_");
-        Regex regex = new Regex("(?<=[{}])_");
-        string[] arrOfStr = regex.Split(fsMid);
+        fsMid = fsMid.Replace("{{", "{_").Replace("}}", "}_"); // replace: {{ --> {_    }} --> }_
+        Regex regex = new Regex(@"(?<=[{}])_");
+        string[] arrOfStr = regex.Split(fsMid); // split by {_  or  }_
         foreach (string s in arrOfStr)
         {
             if (!String.IsNullOrEmpty(s))
@@ -299,12 +297,13 @@ public abstract class PythonLexerBase : Lexer
                 if ("{}".Contains(lastCharacter))
                 {
                     CreateAndAddPendingToken(PythonLexer.FSTRING_MIDDLE, TokenConstants.HiddenChannel, lastCharacter, _ffgToken);
+                    // this inserted hidden token allows to restore the original f-string literal with the double braces
                 }
             }
         }
     }
 
-    private void HandleFStringLexerModes()
+    private void HandleFStringLexerModes()  // https://peps.python.org/pep-0498/#specification
     {
         if (ModeStack.Count > 0)
         {
@@ -316,26 +315,27 @@ public abstract class PythonLexerBase : Lexer
                     break;
                 case PythonLexer.LPAR:
                 case PythonLexer.LSQB:
-                    _paren_or_bracketOpened.Last.Value += 1;
+                    // https://peps.python.org/pep-0498/#lambdas-inside-expressions
+                    _paren_or_bracketOpened.Last.Value += 1; // increment the last element
                     break;
                 case PythonLexer.RPAR:
                 case PythonLexer.RSQB:
-                    _paren_or_bracketOpened.Last.Value -= 1;
+                    _paren_or_bracketOpened.Last.Value -= 1; // decrement the last element
                     break;
-                case PythonLexer.COLON:
+                case PythonLexer.COLON: // colon can only come from DEFAULT_MODE
                     if (_paren_or_bracketOpened.Last.Value == 0)
                     {
-                        switch (ModeStack.Peek())
+                        switch (ModeStack.Peek()) // check the previous lexer mode (the current is DEFAULT_MODE)
                         {
                             case PythonLexer.SINGLE_QUOTE_FSTRING_MODE:
                             case PythonLexer.LONG_SINGLE_QUOTE_FSTRING_MODE:
                             case PythonLexer.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE:
-                                Mode(PythonLexer.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE);
+                                Mode(PythonLexer.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
                                 break;
                             case PythonLexer.DOUBLE_QUOTE_FSTRING_MODE:
                             case PythonLexer.LONG_DOUBLE_QUOTE_FSTRING_MODE:
                             case PythonLexer.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE:
-                                Mode(PythonLexer.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE);
+                                Mode(PythonLexer.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
                                 break;
                         }
                     }
@@ -366,6 +366,7 @@ public abstract class PythonLexerBase : Lexer
             {
                 case PythonLexer.COLON:
                 case PythonLexer.RBRACE:
+                    // insert an empty FSTRING_MIDDLE token instead of the missing format specification
                     CreateAndAddPendingToken(PythonLexer.FSTRING_MIDDLE, TokenConstants.DefaultChannel, "", _ffgToken);
                     break;
             }
@@ -381,7 +382,7 @@ public abstract class PythonLexerBase : Lexer
                 break; // no trailing NEWLINE token is needed
             default:
                 // insert an extra trailing NEWLINE token that serves as the end of the last statement
-                CreateAndAddPendingToken(PythonLexer.NEWLINE, TokenConstants.DefaultChannel, null, _ffgToken);
+                CreateAndAddPendingToken(PythonLexer.NEWLINE, TokenConstants.DefaultChannel, null, _ffgToken); // _ffgToken is EOF
                 break;
         }
         InsertIndentOrDedentToken(0); // Now insert as many trailing DEDENT tokens as needed
@@ -424,17 +425,9 @@ public abstract class PythonLexerBase : Lexer
         {
             _lastPendingTokenTypeForDefaultChannel = _previousPendingTokenType;
         }
-        _pendingTokens.AddLast(token); // the token will be added to the token stream
+        _pendingTokens.AddLast(token);
     }
 
-    // Calculates the indentation of the provided spaces, taking the
-    // following rules into account:
-    //
-    // "Tabs are replaced (from left to right) by one to eight spaces
-    //  such that the total number of characters up to and including
-    //  the replacement is a multiple of eight [...]"
-    //
-    //  -- https://docs.python.org/3/reference/lexical_analysis.html#indentation
     private int GetIndentationLength(string textWS) // the textWS may contain spaces, tabs or formfeeds
     {
         const int TAB_LENGTH = 8; // the standard number of spaces to replace a tab with spaces
@@ -443,13 +436,16 @@ public abstract class PythonLexerBase : Lexer
         {
             switch (ch)
             {
-                case ' ': // A normal space char
+                case ' ':
                     _wasSpaceIndentation = true;
                     length += 1;
                     break;
                 case '\t':
                     _wasTabIndentation = true;
                     length += TAB_LENGTH - (length % TAB_LENGTH);
+                    break;
+                case '\f': // formfeed
+                    length = 0;
                     break;
             }
         }

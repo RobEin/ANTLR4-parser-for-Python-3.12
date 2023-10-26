@@ -3,4 +3,4 @@
 #
 # REQUIREMENT: no error message
 
-importio  # formfeed character after the import keyword
+importio  # formfeed character as whitespace

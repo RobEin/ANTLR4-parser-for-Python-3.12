@@ -1,5 +1,5 @@
 def inc(value):
-# type: (int) -> int
+# this is a comment (or type comment)
     return value + 1
 
 # COMMAND LINE:
