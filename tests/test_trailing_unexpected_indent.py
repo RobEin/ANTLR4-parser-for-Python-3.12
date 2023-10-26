@@ -1,7 +1,7 @@
 # COMMAND LINE:
 # grun Python file_input -tokens test_trailing_unexpected_indent.py
 #
-# REQUIREMENT:
+# EXPECTATION:
 #   - no error message
 
 if True:

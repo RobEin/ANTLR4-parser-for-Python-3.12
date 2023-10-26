@@ -1,7 +1,7 @@
 # COMMAND LINE:
 # grun Python file_input -tokens test_error_inconsistent_dedent.py
 #
-# REQUIREMENTS:
+# EXPECTATIONS:
 #   - inserted ERROR_TOKEN instead of the DEDENT token
 #   - lexer error message: "line 10:0 inconsistent dedent"
 

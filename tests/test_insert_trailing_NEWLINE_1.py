@@ -1,7 +1,7 @@
 # COMMAND LINE:
 # grun Python file_input -tokens test_insert_trailing_NEWLINE_1.py
 #
-# REQUIREMENTS:
+# EXPECTATIONS:
 #   - inserted trailing NEWLINE token
 #   - no error message
 

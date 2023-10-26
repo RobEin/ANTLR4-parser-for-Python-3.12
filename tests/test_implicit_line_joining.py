@@ -1,7 +1,7 @@
 # COMMAND LINE:
 # grun Python file_input -tokens test_implicit_line_joining.py
 #
-# REQUIREMENTS:
+# EXPECTATIONS:
 #   - hidden NEWLINE token (channel=1) after the opening parenthesis
 #   - no error message
 
