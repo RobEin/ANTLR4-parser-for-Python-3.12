@@ -394,7 +394,7 @@ capture_pattern
     : pattern_capture_target;
 
 pattern_capture_target
-    :  {self.isnotEqualCurrentTokenText("_")}? NAME;
+    : soft_kw__not__wildcard;
 
 wildcard_pattern
     : soft_kw_wildcard;
@@ -871,9 +871,10 @@ func_type_comment
     | TYPE_COMMENT;
 
 // *** Soft Keywords:  https://docs.python.org/3.12/reference/lexical_analysis.html#soft-keywords
-soft_kw_match       : {self.isEqualCurrentTokenText("match")}? NAME;
-soft_kw_case        : {self.isEqualCurrentTokenText("case")}?  NAME;
-soft_kw_wildcard    : {self.isEqualCurrentTokenText("_")}?     NAME;
-soft_kw_type        : {self.isEqualCurrentTokenText("type")}?  NAME;
+soft_kw_type:           {this.isEqualToCurrentTokenText("type")}?  NAME;
+soft_kw_match:          {this.isEqualToCurrentTokenText("match")}? NAME;
+soft_kw_case:           {this.isEqualToCurrentTokenText("case")}?  NAME;
+soft_kw_wildcard:       {this.isEqualToCurrentTokenText("_")}?     NAME;
+soft_kw__not__wildcard: {this.isnotEqualToCurrentTokenText("_")}?  NAME;
 
 // ========================= END OF THE GRAMMAR ===========================

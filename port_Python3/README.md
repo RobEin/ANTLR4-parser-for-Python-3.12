@@ -1,18 +1,20 @@
-### Python 3 target
+### Python 3
 
-#### Command line example:
-- first of all copy the two grammar files and the test.py to this directory
+#### Command line example for node.js:
+- first copy the two grammar files and the test.py to this directory and run the transformGrammar.py file
 
 Unix:
 ```bash
     cp ../*.g4 .
     cp ../examples/test.py .
+    python transformGrammar.py
 ```
 
 Windows:
 ```bash
     copy ..\*.g4
     copy ..\examples\test.py
+    python transformGrammar.py
 ```
 
 ```bash

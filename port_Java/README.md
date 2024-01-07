@@ -1,7 +1,7 @@
-### Java 8 target
+### Java 8
 
 #### Command line example:
-- first of all copy the two grammar files and the test.py to this directory
+- first copy the two grammar files and the test.py to this directory
 
 Unix:
 ```bash

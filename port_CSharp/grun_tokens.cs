@@ -25,12 +25,13 @@ namespace grun_tokens
 
         private static string GetTokenMetaDataWithTokenName(PythonParser parser, IToken token)
         {
-            String metaData = token.ToString()!;          // original format: [@TokenIndex,startIndex:stopIndex='text',<TokenType>,line:charPositionInLine]
+            String metaData = token.ToString()!;          // original format: [@TokenIndex,StartIndex:StopIndex='Text',<TokenType>,channel=Channel,Line:Column]
             int lesserPos = metaData.LastIndexOf(",<");
             int greaterPos = metaData.LastIndexOf(">,");
-            return metaData.Substring(0, lesserPos + 2) // modified format: [@TokenIndex,startIndex:stopIndex='text',<TokenName>,line:charPositionInLine]
+            return metaData.Substring(0, lesserPos + 2) // modified format:   [@TokenIndex,StartIndex:StopIndex='Text',<TokenName>,channel=Channel,Line:Column]
                  + parser.Vocabulary.GetSymbolicName(token.Type)
                  + metaData.Substring(greaterPos);
+        
         }
     }
 }
