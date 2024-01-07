@@ -27,7 +27,7 @@ THE SOFTWARE.
   *
   */
 
-parser grammar PythonParser; // Python 3.12.0  https://docs.python.org/3.12/reference/grammar.html#full-grammar-specification
+parser grammar PythonParser; // Python 3.12.1  https://docs.python.org/3.12/reference/grammar.html#full-grammar-specification
 options {
     tokenVocab=PythonLexer;
     superClass=PythonParserBase;
