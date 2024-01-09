@@ -34,9 +34,9 @@ using Antlr4.Runtime;
 public abstract class PythonLexerBase : Lexer
 {
     // A stack that keeps track of the indentation lengths
-    private readonly Stack<int> _indentLengthStack = new Stack<int>();
+    private Stack<int> _indentLengthStack = new Stack<int>();
     // A list where tokens are waiting to be loaded into the token stream
-    private readonly LinkedList<IToken> _pendingTokens = new LinkedList<IToken>();
+    private LinkedList<IToken> _pendingTokens = new LinkedList<IToken>();
     // last pending token types
     private int _previousPendingTokenType = 0;
     private int _lastPendingTokenTypeFromDefaultChannel = 0;
@@ -44,7 +44,7 @@ public abstract class PythonLexerBase : Lexer
     // The amount of opened parentheses, square brackets, or curly braces
     private int _opened = 0;
     //  The amount of opened parentheses and square brackets in the current lexer mode
-    private readonly Stack<int> _paren_or_bracket_openedStack = new Stack<int>();
+    private Stack<int> _paren_or_bracket_openedStack = new Stack<int>();
 
     private bool _wasSpaceIndentation = false;
     private bool _wasTabIndentation = false;
@@ -470,5 +470,21 @@ public abstract class PythonLexerBase : Lexer
 
         // the ERROR_TOKEN will raise an error in the parser
         CreateAndAddPendingToken(PythonLexer.ERROR_TOKEN, TokenConstants.DefaultChannel, _ERR_TXT + errMsg, _ffgToken);
+    }
+
+    public override void Reset()
+    {
+        _indentLengthStack = new Stack<int>();
+        _pendingTokens = new LinkedList<IToken>();
+        _previousPendingTokenType = 0;
+        _lastPendingTokenTypeFromDefaultChannel = 0;
+        _opened = 0;
+        _paren_or_bracket_openedStack = new Stack<int>();
+        _wasSpaceIndentation = false;
+        _wasTabIndentation = false;
+        _wasIndentationMixedWithSpacesAndTabs = false;
+        _curToken = null!;
+        _ffgToken = null!;
+        base.Reset();
     }
 }

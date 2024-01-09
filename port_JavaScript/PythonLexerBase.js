@@ -53,8 +53,8 @@ export default class PythonLexerBase extends antlr4.Lexer {
         this._wasIndentationMixedWithSpacesAndTabs = false;
         this._INVALID_LENGTH = -1;
         
-        this._curToken; // current (under processing) token
-        this._ffgToken; // following (look ahead) token
+        this._curToken = null; // current (under processing) token
+        this._ffgToken = null; // following (look ahead) token
 
         this._ERR_TXT = " ERROR: ";
     }
@@ -394,5 +394,22 @@ export default class PythonLexerBase extends antlr4.Lexer {
 
         // the ERROR_TOKEN will raise an error in the parser
         this.createAndAddPendingToken(PythonLexer.ERROR_TOKEN, Token.DEFAULT_CHANNEL, this._ERR_TXT + errMsg, this._ffgToken);
+    }
+
+    reset() {
+        this._indentLengthStack = [];
+        this._pendingTokens = [];
+        this._previousPendingTokenType = 0;
+        this._lastPendingTokenTypeFromDefaultChannel = 0;
+        this._opened = 0;
+        this._paren_or_bracket_openedStack = [];
+        this._wasSpaceIndentation = false;
+        this._wasTabIndentation = false;
+        this._wasIndentationMixedWithSpacesAndTabs = false;
+        this._INVALID_LENGTH = -1;
+        this._curToken = null;
+        this._ffgToken = null;
+        this._ERR_TXT = " ERROR: ";        
+        super.reset();
     }
 }

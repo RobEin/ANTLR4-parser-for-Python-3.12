@@ -57,6 +57,22 @@ class PythonLexerBase(Lexer):
 
         self._ERR_TXT: str = " ERROR: "
 
+    def reset(self):
+        self._indent_length_stack = deque()
+        self._pending_tokens = []
+        self._previous_pending_token_type = 0
+        self._last_pending_token_type_from_default_channel = 0
+        self._opened = 0
+        self._paren_or_bracket_opened_stack = deque()
+        self._was_space_indentation = False
+        self._was_tab_indentation = False
+        self._was_indentation_mixed_with_spaces_and_tabs = False
+        self._INVALID_LENGTH = -1
+        self._cur_token = None
+        self._ffg_token = None
+        self._ERR_TXT = " ERROR: "
+        super().reset()
+
     def nextToken(self) -> CommonToken: # reading the input stream until a return EOF
         self.check_next_token()
         return self._pending_tokens.pop(0) # add the queued token to the token stream
