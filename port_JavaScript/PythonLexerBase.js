@@ -59,6 +59,23 @@ export default class PythonLexerBase extends antlr4.Lexer {
         this._ERR_TXT = " ERROR: ";
     }
 
+    reset() {
+        this._indentLengthStack = [];
+        this._pendingTokens = [];
+        this._previousPendingTokenType = 0;
+        this._lastPendingTokenTypeFromDefaultChannel = 0;
+        this._opened = 0;
+        this._paren_or_bracket_openedStack = [];
+        this._wasSpaceIndentation = false;
+        this._wasTabIndentation = false;
+        this._wasIndentationMixedWithSpacesAndTabs = false;
+        this._INVALID_LENGTH = -1;
+        this._curToken = null;
+        this._ffgToken = null;
+        this._ERR_TXT = " ERROR: ";        
+        super.reset();
+    }
+
     nextToken() { // reading the input stream until a return EOF
         this.checkNextToken();
         return this._pendingTokens.shift() /* .pollFirst() */; // add the queued token to the token stream
@@ -394,22 +411,5 @@ export default class PythonLexerBase extends antlr4.Lexer {
 
         // the ERROR_TOKEN will raise an error in the parser
         this.createAndAddPendingToken(PythonLexer.ERROR_TOKEN, Token.DEFAULT_CHANNEL, this._ERR_TXT + errMsg, this._ffgToken);
-    }
-
-    reset() {
-        this._indentLengthStack = [];
-        this._pendingTokens = [];
-        this._previousPendingTokenType = 0;
-        this._lastPendingTokenTypeFromDefaultChannel = 0;
-        this._opened = 0;
-        this._paren_or_bracket_openedStack = [];
-        this._wasSpaceIndentation = false;
-        this._wasTabIndentation = false;
-        this._wasIndentationMixedWithSpacesAndTabs = false;
-        this._INVALID_LENGTH = -1;
-        this._curToken = null;
-        this._ffgToken = null;
-        this._ERR_TXT = " ERROR: ";        
-        super.reset();
     }
 }
