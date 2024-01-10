@@ -64,6 +64,22 @@ public abstract class PythonLexerBase : Lexer
     {
     }
 
+    public override void Reset()
+    {
+        _indentLengthStack = new Stack<int>();
+        _pendingTokens = new LinkedList<IToken>();
+        _previousPendingTokenType = 0;
+        _lastPendingTokenTypeFromDefaultChannel = 0;
+        _opened = 0;
+        _paren_or_bracket_openedStack = new Stack<int>();
+        _wasSpaceIndentation = false;
+        _wasTabIndentation = false;
+        _wasIndentationMixedWithSpacesAndTabs = false;
+        _curToken = null!;
+        _ffgToken = null!;
+        base.Reset();
+    }
+
     public override IToken NextToken() // reading the input stream until a return EOF
     {
         CheckNextToken();
@@ -470,21 +486,5 @@ public abstract class PythonLexerBase : Lexer
 
         // the ERROR_TOKEN will raise an error in the parser
         CreateAndAddPendingToken(PythonLexer.ERROR_TOKEN, TokenConstants.DefaultChannel, _ERR_TXT + errMsg, _ffgToken);
-    }
-
-    public override void Reset()
-    {
-        _indentLengthStack = new Stack<int>();
-        _pendingTokens = new LinkedList<IToken>();
-        _previousPendingTokenType = 0;
-        _lastPendingTokenTypeFromDefaultChannel = 0;
-        _opened = 0;
-        _paren_or_bracket_openedStack = new Stack<int>();
-        _wasSpaceIndentation = false;
-        _wasTabIndentation = false;
-        _wasIndentationMixedWithSpacesAndTabs = false;
-        _curToken = null!;
-        _ffgToken = null!;
-        base.Reset();
     }
 }
