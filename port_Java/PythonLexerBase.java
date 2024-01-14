@@ -33,35 +33,35 @@ import org.antlr.v4.runtime.*;
 
 public abstract class PythonLexerBase extends Lexer {
     // A stack that keeps track of the indentation lengths
-    private Deque<Integer> _indentLengthStack = new ArrayDeque<>();
+    private Deque<Integer> _indentLengthStack;
     // A list where tokens are waiting to be loaded into the token stream
-    private LinkedList<Token> _pendingTokens = new LinkedList<>();
+    private LinkedList<Token> _pendingTokens;
 
     // last pending token types
-    private int _previousPendingTokenType = 0;
-    private int _lastPendingTokenTypeFromDefaultChannel = 0;
+    private int _previousPendingTokenType;
+    private int _lastPendingTokenTypeFromDefaultChannel;
 
     // The amount of opened parentheses, square brackets or curly braces
-    private int _opened = 0;
+    private int _opened;
     //  The amount of opened parentheses and square brackets in the current lexer mode
-    private Deque<Integer> _paren_or_bracket_openedStack = new ArrayDeque<>();
+    private Deque<Integer> _paren_or_bracket_openedStack;
 
-    private boolean _wasSpaceIndentation = false;
-    private boolean _wasTabIndentation = false;
-    private boolean _wasIndentationMixedWithSpacesAndTabs = false;
+    private boolean _wasSpaceIndentation;
+    private boolean _wasTabIndentation;
+    private boolean _wasIndentationMixedWithSpacesAndTabs;
     private final int _INVALID_LENGTH = -1;
 
-    private CommonToken _curToken = null; // current (under processing) token
-    private Token _ffgToken = null; // following (look ahead) token
+    private CommonToken _curToken; // current (under processing) token
+    private Token _ffgToken; // following (look ahead) token
 
     private final String _ERR_TXT = " ERROR: ";
 
     protected PythonLexerBase(CharStream input) {
         super(input);
+        init();
     }
 
-    @Override
-    public void reset() {
+    private void init() {
         _indentLengthStack = new ArrayDeque<>();
         _pendingTokens = new LinkedList<>();
         _previousPendingTokenType = 0;
@@ -73,7 +73,6 @@ public abstract class PythonLexerBase extends Lexer {
         _wasIndentationMixedWithSpacesAndTabs = false;
         _curToken = null;
         _ffgToken = null;
-        super.reset();
     }
 
     @Override
@@ -403,5 +402,11 @@ public abstract class PythonLexerBase extends Lexer {
 
         // the ERROR_TOKEN will raise an error in the parser
         createAndAddPendingToken(PythonLexer.ERROR_TOKEN, Token.DEFAULT_CHANNEL, _ERR_TXT + errMsg, _ffgToken);
+    }
+
+    @Override
+    public void reset() {
+        init();
+        super.reset();
     }
 }

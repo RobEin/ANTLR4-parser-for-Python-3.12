@@ -33,31 +33,33 @@ class PythonLexerBase(Lexer):
         super().__init__(input, output)
 
         # A stack that keeps track of the indentation lengths
-        self._indent_length_stack: Deque[int] = deque()
+        self._indent_length_stack: Deque[int]
 
         # A list where tokens are waiting to be loaded into the token stream
-        self._pending_tokens: list[CommonToken] = []
+        self._pending_tokens: list[CommonToken]
 
         # last pending token types
-        self._previous_pending_token_type: int = 0
-        self._last_pending_token_type_from_default_channel: int = 0
+        self._previous_pending_token_type: int
+        self._last_pending_token_type_from_default_channel: int
 
         # The amount of opened parentheses, square brackets or curly braces
-        self._opened: int = 0
+        self._opened: int
         # The amount of opened parentheses and square brackets in the current lexer mode
-        self._paren_or_bracket_opened_stack: Deque[int] = deque()
+        self._paren_or_bracket_opened_stack: Deque[int]
 
-        self._was_space_indentation: bool = False
-        self._was_tab_indentation: bool = False
-        self._was_indentation_mixed_with_spaces_and_tabs: bool = False
-        self._INVALID_LENGTH: int = -1
+        self._was_space_indentation: bool
+        self._was_tab_indentation: bool
+        self._was_indentation_mixed_with_spaces_and_tabs: bool
+        self._INVALID_LENGTH: int
 
-        self._cur_token: CommonToken = None # current (under processing) token
-        self._ffg_token: CommonToken = None # following (look ahead) token
+        self._cur_token: CommonToken # current (under processing) token
+        self._ffg_token: CommonToken # following (look ahead) token
 
-        self._ERR_TXT: str = " ERROR: "
+        self._ERR_TXT: str
 
-    def reset(self):
+        self.init()
+
+    def init(self):
         self._indent_length_stack = deque()
         self._pending_tokens = []
         self._previous_pending_token_type = 0
@@ -71,7 +73,6 @@ class PythonLexerBase(Lexer):
         self._cur_token = None
         self._ffg_token = None
         self._ERR_TXT = " ERROR: "
-        super().reset()
 
     def nextToken(self) -> CommonToken: # reading the input stream until a return EOF
         self.check_next_token()
@@ -318,3 +319,7 @@ class PythonLexerBase(Lexer):
 
         # the ERROR_TOKEN will raise an error in the parser
         self.create_and_add_pending_token(self.ERROR_TOKEN, Token.DEFAULT_CHANNEL, self._ERR_TXT + err_msg, self._ffg_token)
+
+    def reset(self):
+        self.init()
+        super().reset()

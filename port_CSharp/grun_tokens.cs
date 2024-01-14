@@ -31,7 +31,7 @@ namespace grun_tokens
             return metaData.Substring(0, lesserPos + 2) // modified format:   [@TokenIndex,StartIndex:StopIndex='Text',<TokenName>,channel=Channel,Line:Column]
                  + parser.Vocabulary.GetSymbolicName(token.Type)
                  + metaData.Substring(greaterPos);
-        
+
         }
     }
 }

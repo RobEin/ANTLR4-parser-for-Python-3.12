@@ -35,31 +35,33 @@ export default class PythonLexerBase extends antlr4.Lexer {
         super(input);
 
         // A stack that keeps track of the indentation lengths
-        this._indentLengthStack = [];
+        this._indentLengthStack;
         // A list where tokens are waiting to be loaded into the token stream
-        this._pendingTokens = [];
+        this._pendingTokens;
 
         // last pending token types
-        this._previousPendingTokenType = 0;
-        this._lastPendingTokenTypeFromDefaultChannel = 0;
+        this._previousPendingTokenType;
+        this._lastPendingTokenTypeFromDefaultChannel;
 
         // The amount of opened parentheses, square brackets or curly braces
-        this._opened = 0;
+        this._opened;
         //  The amount of opened parentheses and square brackets in the current lexer mode
-        this._paren_or_bracket_openedStack = [];
+        this._paren_or_bracket_openedStack;
 
-        this._wasSpaceIndentation = false;
-        this._wasTabIndentation = false;
-        this._wasIndentationMixedWithSpacesAndTabs = false;
-        this._INVALID_LENGTH = -1;
+        this._wasSpaceIndentation;
+        this._wasTabIndentation;
+        this._wasIndentationMixedWithSpacesAndTabs;
+        this._INVALID_LENGTH;
         
-        this._curToken = null; // current (under processing) token
-        this._ffgToken = null; // following (look ahead) token
+        this._curToken; // current (under processing) token
+        this._ffgToken; // following (look ahead) token
 
-        this._ERR_TXT = " ERROR: ";
+        this._ERR_TXT;
+
+        this.init();
     }
 
-    reset() {
+    init() {
         this._indentLengthStack = [];
         this._pendingTokens = [];
         this._previousPendingTokenType = 0;
@@ -73,7 +75,6 @@ export default class PythonLexerBase extends antlr4.Lexer {
         this._curToken = null;
         this._ffgToken = null;
         this._ERR_TXT = " ERROR: ";        
-        super.reset();
     }
 
     nextToken() { // reading the input stream until a return EOF
@@ -411,5 +412,10 @@ export default class PythonLexerBase extends antlr4.Lexer {
 
         // the ERROR_TOKEN will raise an error in the parser
         this.createAndAddPendingToken(PythonLexer.ERROR_TOKEN, Token.DEFAULT_CHANNEL, this._ERR_TXT + errMsg, this._ffgToken);
+    }
+
+    reset() {
+        this.init();
+        super.reset();
     }
 }

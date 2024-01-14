@@ -1,7 +1,7 @@
 ### C#
 
 #### Command line example for Windows:
-- first create a C# project called grun_tokens then copy the two grammar files and test.py to this directory
+- first create a C# project called grun_tokens then copy the two grammar files and example.py to this directory
 ```bash
     dotnet new console -o . -n grun_tokens -f netcoreapp3.1
     del program.cs
@@ -10,14 +10,14 @@
 
 ```bash
     copy ..\*.g4
-    copy ..\examples\test.py
+    copy ..\example.py
 ```
 
 ```bash
 antlr4 -Dlanguage=CSharp PythonLexer.g4
 antlr4 -Dlanguage=CSharp PythonParser.g4
 dotnet build
-dotnet run test.py --no-build
+dotnet run example.py --no-build
 ```
 
 #### Related links:
