@@ -23,5 +23,5 @@ grun Python file_input -tokens example.py
 grun Python file_input -gui example.py
 ```
 
-#### Relate~~~~d link:
+#### Related link:
 [Java target](https://github.com/antlr/antlr4/blob/master/doc/java-target.md)
