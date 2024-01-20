@@ -91,7 +91,7 @@ public abstract class PythonLexerBase : Lexer
 
     private void CheckNextToken()
     {
-        if (_previousPendingTokenType != Eof)
+        if (_previousPendingTokenType != TokenConstants.EOF)
         {
             SetCurrentAndFollowingTokens();
             if (_indentLengthStack.Count == 0) // We're at the first token
@@ -126,7 +126,7 @@ public abstract class PythonLexerBase : Lexer
                     ReportLexerError("token recognition error at: '" + _curToken.Text + "'");
                     AddPendingToken(_curToken);
                     break;
-                case Eof:
+                case TokenConstants.EOF:
                     HandleEOFtoken();
                     break;
                 default:
@@ -145,7 +145,7 @@ public abstract class PythonLexerBase : Lexer
 
         HandleFStringLexerModes();
 
-        _ffgToken = _curToken.Type == Eof ?
+        _ffgToken = _curToken.Type == TokenConstants.EOF ?
                     _curToken :
                     base.NextToken();
     }
@@ -158,7 +158,7 @@ public abstract class PythonLexerBase : Lexer
     {
         // initialize the stack with a default 0 indentation length
         _indentLengthStack.Push(0); // this will never be popped off
-        while (_curToken.Type != Eof)
+        while (_curToken.Type != TokenConstants.EOF)
         {
             if (_curToken.Channel == TokenConstants.DefaultChannel)
             {
@@ -205,7 +205,7 @@ public abstract class PythonLexerBase : Lexer
         }
         else
         {
-            CommonToken nlToken = (CommonToken)_curToken; // save the current NEWLINE token
+            CommonToken nlToken = new CommonToken(_curToken); // save the current NEWLINE token
             bool isLookingAhead = _ffgToken.Type == PythonLexer.WS;
             if (isLookingAhead)
             {
@@ -227,7 +227,7 @@ public abstract class PythonLexerBase : Lexer
                     AddPendingToken(nlToken);
                     if (isLookingAhead)
                     { // We're on whitespace(s) followed by a statement
-                        int indentationLength = _ffgToken.Type == Eof ?
+                        int indentationLength = _ffgToken.Type == TokenConstants.EOF ?
                                                 0 :
                                                 GetIndentationLength(_curToken.Text);
 
@@ -300,7 +300,7 @@ public abstract class PythonLexerBase : Lexer
     private void HandleFSTRING_MIDDLE_token() // replace the double braces '{{' or '}}' to single braces and hide the second braces
     {
         string fsMid = _curToken.Text;
-        fsMid = fsMid.Replace("{{", "{_").Replace("}}", "}_"); // replace: {{ --> {_    }} --> }_
+        fsMid = fsMid.Replace("{{", "{_").Replace("}}", "}_"); // replace: {{ --> {_  and   }} --> }_
         Regex regex = new Regex(@"(?<=[{}])_");
         string[] arrOfStr = regex.Split(fsMid); // split by {_  or  }_
         foreach (string s in arrOfStr)
@@ -412,24 +412,24 @@ public abstract class PythonLexerBase : Lexer
         AddPendingToken(_curToken);
     }
 
-    private void HideAndAddPendingToken(CommonToken token)
+    private void HideAndAddPendingToken(CommonToken cToken)
     {
-        token.Channel = TokenConstants.HiddenChannel;
-        AddPendingToken(token);
+        cToken.Channel = TokenConstants.HiddenChannel;
+        AddPendingToken(cToken);
     }
 
     private void CreateAndAddPendingToken(int type, int channel, string text, IToken baseToken)
     {
-        CommonToken token = new CommonToken((CommonToken)baseToken);
-        token.Type = type;
-        token.Channel = channel;
-        token.StopIndex = baseToken.StartIndex - 1;
+        CommonToken cToken = new CommonToken(baseToken);
+        cToken.Type = type;
+        cToken.Channel = channel;
+        cToken.StopIndex = baseToken.StartIndex - 1;
 
-        token.Text = text == null
+        cToken.Text = text == null
                    ? "<" + Vocabulary.GetSymbolicName(type) + ">"
                    : text;
 
-        AddPendingToken(token);
+        AddPendingToken(cToken);
     }
 
     private void AddPendingToken(IToken token)
@@ -443,7 +443,7 @@ public abstract class PythonLexerBase : Lexer
         _pendingTokens.AddLast(token);
     }
 
-    private int GetIndentationLength(string textWS) // the textWS may contain spaces, tabs or formfeeds
+    private int GetIndentationLength(string textWS) // the textWS may contain spaces, tabs or form feeds
     {
         const int TAB_LENGTH = 8; // the standard number of spaces to replace a tab with spaces
         int length = 0;
@@ -459,7 +459,7 @@ public abstract class PythonLexerBase : Lexer
                     _wasTabIndentation = true;
                     length += TAB_LENGTH - (length % TAB_LENGTH);
                     break;
-                case '\f': // formfeed
+                case '\f': // form feed
                     length = 0;
                     break;
             }
