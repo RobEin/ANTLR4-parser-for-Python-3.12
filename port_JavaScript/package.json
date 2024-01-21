@@ -1,9 +1,0 @@
-{
-  "type": "module",
-  "dependencies": {
-    "antlr4": "^4.13.1-patch-1"
-  },
-  "devDependencies": {
-    "webpack": "^5.89.0"
-  }
-}

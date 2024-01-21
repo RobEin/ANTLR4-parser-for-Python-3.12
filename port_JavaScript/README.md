@@ -1,7 +1,12 @@
 ### JavaScript
 
-#### Command line example for node.js:
-- first copy the two grammar files and the example.py to this directory
+#### Command line example for [Node.js](https://nodejs.org/en/download):
+- first download the necessary node modules and set the ```type``` field in the ```package.json``` then copy the two grammar files and example.py to this directory:
+```bash
+    npm i antlr4
+    npm install --save-dev webpack
+    npm pkg set type=module
+```
 
 Unix:
 ```bash
@@ -22,4 +27,5 @@ node grun_tokens.js example.py
 ```
 
 #### Related link:
+[Node.js](https://nodejs.org/en/download)
 [JavaScript target](https://github.com/antlr/antlr4/blob/dev/doc/javascript-target.md)
