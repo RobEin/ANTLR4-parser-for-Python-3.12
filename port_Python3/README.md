@@ -1,7 +1,13 @@
-### Python 3
+### Python 3 implementation
 
-#### Command line example for node.js:
-- first copy the two grammar files and the example.py to this directory and run the transformGrammar.py file
+#### Prerequisites:
+- Installed [ANTLR4-tools](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md#getting-started-the-easy-way-using-antlr4-tools)
+- Installed [Python 3](https://www.python.org/downloads/)
+- Installed [ANTLR4 Python 3 runtime](https://pypi.org/project/antlr4-python3-runtime/)
+
+
+#### Command line example:
+- first copy the two grammar files and the example.py to this directory and run the transformGrammar.py file:
 
 Unix:
 ```bash
@@ -24,7 +30,6 @@ pygrun --tokens Python file_input example.py
 pygrun --tree Python file_input example.py
 ```
 
-#### Related link:
-[Python target](https://github.com/antlr/antlr4/blob/master/doc/python-target.md)
 
-[ANTLR4 Python 3 runtime](https://pypi.org/project/antlr4-python3-runtime/)
+#### Related link:
+[Python 3 target](https://github.com/antlr/antlr4/blob/master/doc/python-target.md)

@@ -1,7 +1,11 @@
-### Java 8
+### Java 8 implementation
+
+#### Prerequisites:
+- Installed [ANTLR4-tools](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md#getting-started-the-easy-way-using-antlr4-tools)
+
 
 #### Command line example:
-- first copy the two grammar files and the example.py to this directory
+- first copy the two grammar files and the example.py to this directory:
 
 Unix:
 ```bash
@@ -23,5 +27,6 @@ grun Python file_input -tokens example.py
 grun Python file_input -gui example.py
 ```
 
+ 
 #### Related link:
 [Java target](https://github.com/antlr/antlr4/blob/master/doc/java-target.md)
