@@ -8,7 +8,7 @@
 #### Command line example for Node.js:
 - first download the necessary node modules and set the ```type``` field in the ```package.json``` then copy the two grammar files and example.py to this directory:
 ```bash
-    npm install antlr4
+    npm install --save-dev antlr4
     npm install --save-dev webpack
     npm pkg set type=module
 ```
@@ -28,7 +28,7 @@ Windows:
 ```bash
 antlr4 -Dlanguage=JavaScript PythonLexer.g4
 antlr4 -Dlanguage=JavaScript PythonParser.g4
-node grun_tokens.js example.py
+node jsgrun4py.js example.py
 ```
 
 

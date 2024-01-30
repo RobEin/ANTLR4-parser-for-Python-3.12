@@ -7,10 +7,10 @@ public abstract class PythonParserBase extends Parser {
 
     // https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords
     public boolean isEqualToCurrentTokenText(String tokenText) {
-        return getCurrentToken().getText().equals(tokenText);
+        return this.getCurrentToken().getText().equals(tokenText);
     }
 
     public boolean isnotEqualToCurrentTokenText(String tokenText) {
-        return !isEqualToCurrentTokenText(tokenText); // for compatibility with the Python 'not' logical operator
+        return !this.isEqualToCurrentTokenText(tokenText); // for compatibility with the Python 'not' logical operator
     }
 }

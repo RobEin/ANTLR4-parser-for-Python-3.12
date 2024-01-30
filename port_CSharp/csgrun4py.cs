@@ -3,7 +3,7 @@ using System;
 
 [assembly: CLSCompliant(false)]
 
-namespace grun_tokens
+namespace csgrun4py
 {
     static class Program
     {
