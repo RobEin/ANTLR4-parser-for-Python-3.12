@@ -3,7 +3,7 @@ import PythonLexer from "./PythonLexer.js";
 import PythonParser from "./PythonParser.js";
 
 function getTokenMetaDataWithTokenName(token) {
-    const tokenText = token.text.replaceAll("\r", "\\r").replaceAll("\n", "\\n");
+    const tokenText = token.text.replace(/\r/g, "\\r").replace(/\n/g, "\\n");
     const tokenName = token.type == -1 ? "EOF" : parser.symbolicNames[token.type] ?? "";
     const channelText = token.channel == 0 ? "" : "channel=" + token.channel + ",";
 
