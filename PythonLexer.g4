@@ -318,6 +318,7 @@ fragment IMAG_NUMBER : (FLOAT_NUMBER | DIGIT_PART) ('j' | 'J');
 // https://docs.python.org/3.12/reference/lexical_analysis.html#physical-lines
 fragment OS_INDEPENDENT_NL : '\r'? '\n'; // Unix, Windows
 
+// https://github.com/RobEin/ANTLR4-parser-for-Python-3.12/tree/main/valid_chars_in_py_identifiers
 fragment ID_CONTINUE:
     ID_START
     | '\u{0030}' .. '\u{0039}'
@@ -696,6 +697,7 @@ fragment ID_CONTINUE:
     | '\u{E0100}' .. '\u{E01EF}'
 ;
 
+// https://github.com/RobEin/ANTLR4-parser-for-Python-3.12/tree/main/valid_chars_in_py_identifiers
 fragment ID_START:
     '\u{0041}' .. '\u{005A}'
     | '\u{005F}'
