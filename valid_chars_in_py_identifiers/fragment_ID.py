@@ -1,4 +1,4 @@
-# based on:  https://github.com/asmeurer/python-unicode-variable-names
+# related link:  https://github.com/asmeurer/python-unicode-variable-names
 
 import sys
 
