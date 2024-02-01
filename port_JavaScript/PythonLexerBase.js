@@ -364,12 +364,12 @@ export default class PythonLexerBase extends Lexer {
     }
 
     getCommonTokenByToken(oldToken) {
-        let commonToken = new CommonToken(oldToken.source, oldToken.type, oldToken.channel, oldToken.start, oldToken.stop);
-        commonToken.tokenIndex = oldToken.tokenIndex;
-        commonToken.line = oldToken.line;
-        commonToken.column = oldToken.column;
-        commonToken.text = oldToken.text;
-        return commonToken;
+        let cToken = new CommonToken(oldToken.source, oldToken.type, oldToken.channel, oldToken.start, oldToken.stop);
+        cToken.tokenIndex = oldToken.tokenIndex;
+        cToken.line = oldToken.line;
+        cToken.column = oldToken.column;
+        cToken.text = oldToken.text;
+        return cToken;
     }
 
     getIndentationLength(textWS) { // the textWS may contain spaces, tabs or form feeds

@@ -31,7 +31,7 @@ def main():
     save(fragment_ID, "fragment_ID.txt")
 
 def get_ranged_list(codes):
-    ranged_list = []
+    ranged_array = []
     
     unicode_from = sys.maxunicode
     unicode_to = -2
@@ -40,15 +40,15 @@ def get_ranged_list(codes):
             unicode_to = i
         else:
             if unicode_from < unicode_to:
-                ranged_list[-1] += " .. " + get_antlr4_hex(unicode_to)
+                ranged_array[-1] += " .. " + get_antlr4_hex(unicode_to)
             unicode_from = i
             unicode_to = i
-            ranged_list.append(get_antlr4_hex(unicode_from))
+            ranged_array.append(get_antlr4_hex(unicode_from))
     else:
         if unicode_from < unicode_to:
-            ranged_list[-1] += " .. " + get_antlr4_hex(unicode_to)
+            ranged_array[-1] += " .. " + get_antlr4_hex(unicode_to)
 
-    return "\n    | ".join(ranged_list)
+    return "\n    | ".join(ranged_array)
 
 def get_antlr4_hex(i):
     return "'\\u{" + f"{i:04X}" + "}'"
