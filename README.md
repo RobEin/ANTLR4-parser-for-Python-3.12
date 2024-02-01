@@ -4,14 +4,16 @@
  - PythonParser.g4
    is the ANTLR4 parser grammar that based on the official [Python PEG grammar](https://docs.python.org/3.12/reference/grammar.html)
 
- - PythonLexerBase.java
+ - PythonLexerBase
    handles the Python indentations
 
-- Example files: [Python 3.12.0 Standard Lib](https://www.python.org/downloads/release/python-3120/)
+- Example files: [Python 3.12 Standard Lib](https://github.com/python/cpython/tree/3.12/Lib)
  
 
 ### Related links:
 [ANTLR 4](https://www.antlr.org/)
+
+[ANTLR4-tools](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md#getting-started-the-easy-way-using-antlr4-tools)
 
 [ANTLR 4 Documentation](https://github.com/antlr/antlr4/tree/master/doc)
 
