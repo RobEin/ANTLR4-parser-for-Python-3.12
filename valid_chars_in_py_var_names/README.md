@@ -1,6 +1,7 @@
 # A helper program to create ANTLR4 lexer fragment rules for Python identifiers. &nbsp;
 
-### To generate the text file with fragment rules, use with the appropriate version of python:
+### To generate the text file with fragment rules:
+(use the appropriate version of python)
 ```bash
 python fragment_ID.py
 ```
