@@ -18,37 +18,34 @@ def main():
     continue_list = \
         "fragment ID_CONTINUE:\n" \
         "    ID_START\n" \
-        "    | " + get_ranged_list(continue_codes) + "\n" \
+        "    | " + get_ranged_unicodes(continue_codes) + "\n" \
         ";"    
 
     start_list = \
         "fragment ID_START:\n" \
-        "    " + get_ranged_list(start_codes) + "\n" \
+        "    " + get_ranged_unicodes(start_codes) + "\n" \
         ";"
 
     fragment_ID = continue_list + "\n\n" + start_list
     print(fragment_ID)
     save(fragment_ID, "fragment_ID.txt")
 
-def get_ranged_list(codes):
-    ranged_array = []
-    
+def get_ranged_unicodes(unicodes):
+    ranged_list = []
     unicode_from = sys.maxunicode
     unicode_to = -2
-    for i in codes:
-        if i - unicode_to == 1:
-            unicode_to = i
-        else:
-            if unicode_from < unicode_to:
-                ranged_array[-1] += " .. " + get_antlr4_hex(unicode_to)
-            unicode_from = i
-            unicode_to = i
-            ranged_array.append(get_antlr4_hex(unicode_from))
-    else:
-        if unicode_from < unicode_to:
-            ranged_array[-1] += " .. " + get_antlr4_hex(unicode_to)
 
-    return "\n    | ".join(ranged_array)
+    for i in unicodes:
+        if i - unicode_to > 1:
+            if unicode_from < unicode_to:
+                ranged_list[-1] += " .. " + get_antlr4_hex(unicode_to)
+            unicode_from = i
+            ranged_list.append(get_antlr4_hex(unicode_from))
+        unicode_to = i
+    if unicode_from < unicode_to:
+        ranged_list[-1] += " .. " + get_antlr4_hex(unicode_to)
+
+    return "\n    | ".join(ranged_list)
 
 def get_antlr4_hex(i):
     return "'\\u{" + f"{i:04X}" + "}'"
