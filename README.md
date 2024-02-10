@@ -11,24 +11,22 @@
 
 <br/><br/>
 ### Known issue:
-The lexer currently does not support identifying places in the code where type comment may exist.
+The lexer currently does not support identifying places in Python codes where type comment may exist.
 That is, all comments that start like this:
 ```
 # type: ...
 ```
 will be identified as a TYPE_COMMENT token.
-Unfortunately, this is inaccurate because TYPE_COMMENT token is only possible for certain statements.
+Unfortunately, this is inaccurate because TYPE_COMMENT token can only appear for certain statements.
 Therefore, all TYPE_COMMENT tokens are currently set to hidden in the lexer:
 ```
 TYPE_COMMENT: '#' WS? 'type:' ~[\r\n]* -> channel(HIDDEN);
 ```
-
 This means that type comments are currently not parsed.
-If you need TYPE_COMMENT tokens and you are sure that the type comments are only at the appropriate statements in your code then you can switch them back in the [lexer](https://github.com/RobEin/ANTLR4-parser-for-Python-3.12/blob/main/PythonLexer.g4) as follows:
+If you need TYPE_COMMENT tokens and you are sure that the type comments are only at the appropriate statements in your Python code then you can switch them back in the [lexer](https://github.com/RobEin/ANTLR4-parser-for-Python-3.8/blob/main/PythonLexer.g4) as follows:
 ```
 TYPE_COMMENT: '#' WS? 'type:' ~[\r\n]*;
 ```
-
 related discussion:
 [Deprecate type comment support?](https://github.com/python/mypy/issues/12947)
 
