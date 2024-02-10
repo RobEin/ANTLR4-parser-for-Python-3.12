@@ -11,7 +11,7 @@
 
 <br/><br/>
 ### Known issue:
-The identification of places in the code where type comment might exist, does not work in the lexer yet.
+The identification of places in the code where type comment might exist does not work in the lexer yet.
 Therefore, all TYPE_COMMENT tokens are currently hidden:
 ```
 TYPE_COMMENT: '#' WS? 'type:' ~[\r\n]* -> channel(HIDDEN);
