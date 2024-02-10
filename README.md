@@ -12,7 +12,7 @@
 <br/><br/>
 ### Known issue:
 The parsing of type comments is currently not supported.\
-If you need TYPE_COMMENT tokens and you are sure that the type comments are only at the appropriate statements in your Python code then you can use them with the following modified [lexer](https://github.com/RobEin/ANTLR4-parser-for-Python-3.12/blob/main/PythonLexer.g4) rule:
+However, if the type comments appear only at the appropriate statements in the Python code then the parsing of type comments can be used with the following modified [lexer](https://github.com/RobEin/ANTLR4-parser-for-Python-3.12/blob/main/PythonLexer.g4) rule:
 ```
 TYPE_COMMENT: '#' WS? 'type:' ~[\r\n]*;
 ```
