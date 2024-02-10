@@ -1,4 +1,4 @@
-# ANTLR4 parser for Python 3.12.1 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# ANTLR4 parser for Python 3.12.2 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ### About files:
  - PythonParser.g4
@@ -8,8 +8,25 @@
    handles the Python indentations
 
 - Example files: [Python 3.12 Standard Lib](https://github.com/python/cpython/tree/3.12/Lib)
- 
 
+<br/><br/>
+### Known issue:
+The identification of places in the code where type comment might exist, does not work in the lexer yet.
+Therefore, all TYPE_COMMENT tokens are currently hidden:
+```
+TYPE_COMMENT: '#' WS? 'type:' ~[\r\n]* -> channel(HIDDEN);
+```
+
+This means that type comments are currently not parsed.
+If you need TYPE_COMMENT tokens and you are sure that the type comments are only at the appropriate statements in your code then you can switch them back in the [lexer](https://github.com/RobEin/ANTLR4-parser-for-Python-3.12/blob/main/PythonLexer.g4) as follows:
+```
+TYPE_COMMENT: '#' WS? 'type:' ~[\r\n]*;
+```
+
+related discussion:
+[Deprecate type comment support?](https://github.com/python/mypy/issues/12947)
+
+<br/><br/> 
 ### Related links:
 [ANTLR 4](https://www.antlr.org/)
 
