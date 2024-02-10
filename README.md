@@ -12,7 +12,7 @@
 <br/><br/>
 ### Known issue:
 The parsing of type comments is currently not supported.\
-However, if the type comments appear only at the appropriate statements in the Python code then the parsing of type comments can be used with the following modified [lexer](https://github.com/RobEin/ANTLR4-parser-for-Python-3.12/blob/main/PythonLexer.g4) rule:
+However, if the type comments appear only at the related statements in the Python code then the parsing of type comments can be used with the following modified [lexer](https://github.com/RobEin/ANTLR4-parser-for-Python-3.12/blob/main/PythonLexer.g4) rule:
 ```
 TYPE_COMMENT: '#' WS? 'type:' ~[\r\n]*;
 ```
