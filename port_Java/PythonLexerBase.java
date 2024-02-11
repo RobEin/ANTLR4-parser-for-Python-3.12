@@ -110,7 +110,7 @@ public abstract class PythonLexerBase extends Lexer {
                 case PythonLexer.FSTRING_MIDDLE:
                     this.handleFSTRING_MIDDLE_token();
                     break;
-                case PythonLexer.ERROR_TOKEN:
+                case PythonLexer.ERRORTOKEN:
                     this.reportLexerError("token recognition error at: '" + this.curToken.getText() + "'");
                     this.addPendingToken(this.curToken);
                     break;
@@ -184,7 +184,6 @@ public abstract class PythonLexerBase extends Lexer {
             switch (this.ffgToken.getType()) {
                 case PythonLexer.NEWLINE:      // We're before a blank line
                 case PythonLexer.COMMENT:      // We're before a comment
-                case PythonLexer.TYPE_COMMENT: // We're before a type comment
                     this.hideAndAddPendingToken(nlToken);
                     if (isLookingAhead) {
                         this.addPendingToken(this.curToken);  // WS token
@@ -400,8 +399,8 @@ public abstract class PythonLexerBase extends Lexer {
     private void reportError(final String errMsg) {
         this.reportLexerError(errMsg);
 
-        // the ERROR_TOKEN will raise an error in the parser
-        this.createAndAddPendingToken(PythonLexer.ERROR_TOKEN, Token.DEFAULT_CHANNEL, this.ERR_TXT + errMsg, this.ffgToken);
+        // the ERRORTOKEN will raise an error in the parser
+        this.createAndAddPendingToken(PythonLexer.ERRORTOKEN, Token.DEFAULT_CHANNEL, this.ERR_TXT + errMsg, this.ffgToken);
     }
 
     @Override

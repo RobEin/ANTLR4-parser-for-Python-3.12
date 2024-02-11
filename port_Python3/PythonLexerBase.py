@@ -21,7 +21,6 @@
 # 
 # Developed by : Robert Einhorn
 
-from collections import deque
 from typing import TextIO
 from antlr4 import InputStream, Lexer, Token
 from antlr4.Token import CommonToken
@@ -33,7 +32,7 @@ class PythonLexerBase(Lexer):
         super().__init__(input, output)
 
         # A stack that keeps track of the indentation lengths
-        self.indent_length_stack: Deque[int]
+        self.indent_length_stack: list[int]
 
         # A list where tokens are waiting to be loaded into the token stream
         self.pending_tokens: list[CommonToken]
@@ -45,7 +44,7 @@ class PythonLexerBase(Lexer):
         # The amount of opened parentheses, square brackets or curly braces
         self.opened: int
         # The amount of opened parentheses and square brackets in the current lexer mode
-        self.paren_or_bracket_opened_stack: Deque[int]
+        self.paren_or_bracket_opened_stack: list[int]
 
         self.was_space_indentation: bool
         self.was_tab_indentation: bool
@@ -60,12 +59,12 @@ class PythonLexerBase(Lexer):
         self.init()
 
     def init(self):
-        self.indent_length_stack = deque()
+        self.indent_length_stack = []
         self.pending_tokens = []
         self.previous_pending_token_type = 0
         self.last_pending_token_type_from_default_channel = 0
         self.opened = 0
-        self.paren_or_bracket_opened_stack = deque()
+        self.paren_or_bracket_opened_stack = []
         self.was_space_indentation = False
         self.was_tab_indentation = False
         self.was_indentation_mixed_with_spaces_and_tabs = False
@@ -96,7 +95,7 @@ class PythonLexerBase(Lexer):
                     self.handle_STRING_token()
                 case self.FSTRING_MIDDLE:
                     self.handle_FSTRING_MIDDLE_token()
-                case self.ERROR_TOKEN:
+                case self.ERRORTOKEN:
                     self.report_lexer_error("token recognition error at: '" + self.cur_token.text + "'")
                     self.add_pending_token(self.cur_token)
                 case Token.EOF:
@@ -153,8 +152,8 @@ class PythonLexerBase(Lexer):
                 self.set_current_and_following_tokens() # set the next two tokens
 
             match self.ffg_token.type:
-                case self.NEWLINE | self.COMMENT | self.TYPE_COMMENT:
-                    # We're before a blank line or a comment or a type comment
+                case self.NEWLINE | self.COMMENT:
+                    # We're before a blank line or a comment or type comment or a type ignore comment
                     self.hide_and_add_pending_token(nl_token)     # ignore the NEWLINE token
                     if is_looking_ahead:
                         self.add_pending_token(self.cur_token) # WS token
@@ -317,8 +316,8 @@ class PythonLexerBase(Lexer):
     def report_error(self, err_msg):
         self.report_lexer_error(err_msg)
 
-        # the ERROR_TOKEN will raise an error in the parser
-        self.create_and_add_pending_token(self.ERROR_TOKEN, Token.DEFAULT_CHANNEL, self.ERR_TXT + err_msg, self.ffg_token)
+        # the ERRORTOKEN will raise an error in the parser
+        self.create_and_add_pending_token(self.ERRORTOKEN, Token.DEFAULT_CHANNEL, self.ERR_TXT + err_msg, self.ffg_token)
 
     def reset(self):
         self.init()

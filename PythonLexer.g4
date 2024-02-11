@@ -32,6 +32,7 @@ options { superClass=PythonLexerBase; }
 
 tokens {
     INDENT, DEDENT // https://docs.python.org/3.12/reference/lexical_analysis.html#indentation
+  , TYPE_COMMENT // not supported
   , FSTRING_START, FSTRING_MIDDLE, FSTRING_END // https://peps.python.org/pep-0701/#specification
 }
 
@@ -152,17 +153,14 @@ NEWLINE
     : OS_INDEPENDENT_NL
     ;
 
-// https://peps.python.org/pep-0484/#type-comments
-TYPE_COMMENT: '#' WS? 'type:' ~[\r\n]* -> channel(HIDDEN);
-
 // https://docs.python.org/3.12/reference/lexical_analysis.html#comments
-COMMENT : '#' ~[\r\n]*                 -> channel(HIDDEN);
+COMMENT : '#' ~[\r\n]*               -> channel(HIDDEN);
 
 // https://docs.python.org/3.12/reference/lexical_analysis.html#whitespace-between-tokens
-WS : [ \t\f]+                          -> channel(HIDDEN);
+WS : [ \t\f]+                        -> channel(HIDDEN);
 
 // https://docs.python.org/3.12/reference/lexical_analysis.html#explicit-line-joining
-EXPLICIT_LINE_JOINING : '\\' NEWLINE   -> channel(HIDDEN);
+EXPLICIT_LINE_JOINING : '\\' NEWLINE -> channel(HIDDEN);
 
 // https://docs.python.org/3.12/reference/lexical_analysis.html#formatted-string-literals
 SINGLE_QUOTE_FSTRING_START      : F_STRING_PREFIX [']       -> type(FSTRING_START), pushMode(SINGLE_QUOTE_FSTRING_MODE);
@@ -170,7 +168,7 @@ DOUBLE_QUOTE_FSTRING_START      : F_STRING_PREFIX ["]       -> type(FSTRING_STAR
 LONG_SINGLE_QUOTE_FSTRING_START : F_STRING_PREFIX ['][']['] -> type(FSTRING_START), pushMode(LONG_SINGLE_QUOTE_FSTRING_MODE);
 LONG_DOUBLE_QUOTE_FSTRING_START : F_STRING_PREFIX ["]["]["] -> type(FSTRING_START), pushMode(LONG_DOUBLE_QUOTE_FSTRING_MODE);
 
-ERROR_TOKEN : . ; // catch the unrecognized characters and redirect these errors to the parser
+ERRORTOKEN : . ; // catch the unrecognized characters and redirect these errors to the parser
 
 
 /*
@@ -211,6 +209,8 @@ mode DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE; // only used after a format specifi
 /*
  *  fragments
  */
+
+fragment IGNORE: 'ignore';
 
 // https://docs.python.org/3.12/reference/lexical_analysis.html#literals
 
