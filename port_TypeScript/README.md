@@ -5,7 +5,7 @@
 - Installed [Node.js](https://nodejs.org/en/download/package-manager)
  
 
-#### Command line example for Node.js:
+#### Command line example:
 - first download the necessary node modules and create the ```tsconfig.json``` then copy the two grammar files and example.py to this directory:
 ```bash
     npm install typescript
