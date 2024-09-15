@@ -1,8 +1,8 @@
 import { CharStreams, CommonTokenStream, Token } from "antlr4";
-import PythonLexer from "./PythonLexer.js";
-import PythonParser from "./PythonParser.js";
+import PythonLexer from "./PythonLexer";
+import PythonParser from "./PythonParser";
 
-function getTokenMetaDataWithTokenName(token) {
+function getTokenMetaDataWithTokenName(token: Token): string {
     const tokenText = token.toString();
     const tokenName = token.type == Token.EOF ? "EOF" : parser.symbolicNames[token.type] ?? "";
     const channelText = token.channel == Token.DEFAULT_CHANNEL ? "" : "channel=" + token.channel + ",";
@@ -12,7 +12,7 @@ function getTokenMetaDataWithTokenName(token) {
     return "[@" + token.tokenIndex + "," + token.start + ":" + token.stop + "='" + tokenText + "',<" + tokenName + ">," + channelText + token.line + ":" + token.column + "]";
 }
 
-const input = CharStreams.fromPathSync(process.argv[2]);
+const input = CharStreams.fromPathSync(process.argv[2], "UTF8");
 const lexer = new PythonLexer(input);
 const tokens = new CommonTokenStream(lexer);
 const parser = new PythonParser(tokens);

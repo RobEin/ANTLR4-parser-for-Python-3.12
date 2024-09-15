@@ -1,4 +1,4 @@
-# ANTLR4 parser for Python 3.12.2 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# ANTLR4 parser for Python 3.12.6 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ### About files:
  - PythonParser.g4
@@ -8,13 +8,6 @@
    handles the Python indentations
 
 - Example files: [Python 3.12 Standard Lib](https://github.com/python/cpython/tree/3.12/Lib)
-
-<br/><br/>
-### Known issue:
-The parsing of [type comments](https://peps.python.org/pep-0484/#type-comments) is not supported.
-
-related discussion:\
-[Deprecate type comment support?](https://github.com/python/mypy/issues/12947)
 
 <br/><br/> 
 ### Related links:

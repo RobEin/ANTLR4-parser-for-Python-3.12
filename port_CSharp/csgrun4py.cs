@@ -25,13 +25,13 @@ namespace csgrun4py
 
         private static string GetTokenMetaDataWithTokenName(PythonParser parser, IToken token)
         {
-            String metaData = token.ToString()!;          // original format: [@TokenIndex,StartIndex:StopIndex='Text',<TokenType>,channel=Channel,Line:Column]
-            int lesserPos = metaData.LastIndexOf(",<");
-            int greaterPos = metaData.LastIndexOf(">,");
-            return metaData.Substring(0, lesserPos + 2) // modified format:   [@TokenIndex,StartIndex:StopIndex='Text',<TokenName>,channel=Channel,Line:Column]
-                 + parser.Vocabulary.GetSymbolicName(token.Type)
-                 + metaData.Substring(greaterPos);
+            String tokenText = token.ToString();
+            String tokenName = token.Type == TokenConstants.EOF ? "EOF" : parser.Vocabulary.GetDisplayName(token.Type);
+            String channelText = token.Channel == TokenConstants.DefaultChannel ? "" : "channel=" + token.Channel + ",";
 
+            // original format: [@TokenIndex,StartIndex:StopIndex='Text',<TokenType>,channel=Channel,Line:Column]
+            // modified format: [@TokenIndex,StartIndex:StopIndex='Text',<TokenName>,channel=Channel,Line:Column]
+            return "[@" + token.TokenIndex + "," + token.StartIndex + ":" + token.StopIndex + "='" + tokenText + "',<" + tokenName + ">," + channelText + token.Line + ":" + token.Column + "]";
         }
     }
 }

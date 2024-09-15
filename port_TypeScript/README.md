@@ -1,4 +1,4 @@
-### JavaScript implementation
+### TypeScript implementation
 
 #### Prerequisites:
 - Installed [ANTLR4-tools](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md#getting-started-the-easy-way-using-antlr4-tools)
@@ -6,11 +6,13 @@
  
 
 #### Command line example for Node.js:
-- first download the necessary node modules and set the ```type``` field in the ```package.json``` then copy the two grammar files and example.py to this directory:
+- first download the necessary node modules and create the ```tsconfig.json``` then copy the two grammar files and example.py to this directory:
 ```bash
+    npm install typescript
+    npm install typescript-collections
     npm install antlr4
     npm install webpack
-    npm pkg set type=module
+    npx tsc --init
 ```
 
 Unix:
@@ -26,11 +28,12 @@ Windows:
 ```
 
 ```bash
-antlr4 -Dlanguage=JavaScript PythonLexer.g4
-antlr4 -Dlanguage=JavaScript PythonParser.g4
-node jsgrun4py.js example.py
+antlr4 -Dlanguage=TypeScript PythonLexer.g4
+antlr4 -Dlanguage=TypeScript PythonParser.g4
+npx tsc
+node tsgrun4py.js example.py
 ```
 
 
 #### Related link:
-[JavaScript target](https://github.com/antlr/antlr4/blob/dev/doc/javascript-target.md)
+[TypeScript target](https://github.com/antlr/antlr4/blob/dev/doc/typescript-target.md)

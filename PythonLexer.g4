@@ -32,7 +32,7 @@ options { superClass=PythonLexerBase; }
 
 tokens {
     INDENT, DEDENT // https://docs.python.org/3.12/reference/lexical_analysis.html#indentation
-  , TYPE_COMMENT // not supported
+  , TYPE_COMMENT // not supported, only for compatibility with the PythonParser.g4 grammar
   , FSTRING_START, FSTRING_MIDDLE, FSTRING_END // https://peps.python.org/pep-0701/#specification
 }
 
@@ -149,9 +149,7 @@ STRING
     ;
 
 // https://docs.python.org/3.12/reference/lexical_analysis.html#physical-lines
-NEWLINE
-    : OS_INDEPENDENT_NL
-    ;
+NEWLINE : '\r'? '\n'; // Unix, Windows
 
 // https://docs.python.org/3.12/reference/lexical_analysis.html#comments
 COMMENT : '#' ~[\r\n]*               -> channel(HIDDEN);
@@ -238,10 +236,10 @@ fragment SHORT_STRING_CHAR_NO_DOUBLE_QUOTE : ~[\\\r\n"];       // <any source ch
 
 fragment LONG_STRING_CHAR  : ~'\\';                            // <any source character except "\">
 
-fragment STRING_ESCAPE_SEQ
-    : '\\' OS_INDEPENDENT_NL // \<newline> escape sequence
-    | '\\' .                                                    // "\" <any source character>
-    ; // the \<newline> (not \n) escape sequences will be removed from the string literals by the PythonLexerBase class
+fragment STRING_ESCAPE_SEQ // https://docs.python.org/3/reference/lexical_analysis.html#escape-sequences
+    : '\\' '\r' '\n'  // for the two-character Windows line break: \<newline> escape sequence (string literal line continuation)
+    | '\\' .                                                   // "\" <any source character>
+    ;
 
 fragment BYTES_LITERAL : BYTES_PREFIX (SHORT_BYTES | LONG_BYTES);
 fragment BYTES_PREFIX  : 'b' | 'B' | 'br' | 'Br' | 'bR' | 'BR' | 'rb' | 'rB' | 'Rb' | 'RB';
@@ -312,9 +310,6 @@ fragment EXPONENT       : ('e' | 'E') ('+' | '-')? DIGIT_PART;
 
 // https://docs.python.org/3.12/reference/lexical_analysis.html#imaginary-literals
 fragment IMAG_NUMBER : (FLOAT_NUMBER | DIGIT_PART) ('j' | 'J');
-
-// https://docs.python.org/3.12/reference/lexical_analysis.html#physical-lines
-fragment OS_INDEPENDENT_NL : '\r'? '\n'; // Unix, Windows
 
 // https://github.com/RobEin/ANTLR4-parser-for-Python-3.12/tree/main/valid_chars_in_py_identifiers
 fragment ID_CONTINUE:
