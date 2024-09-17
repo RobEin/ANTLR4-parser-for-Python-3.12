@@ -5,4 +5,4 @@ The necessary Go [runtime modification](https://github.com/antlr/antlr4/pull/462
 It will probably be merged in the next ANTLR4 version.
 
 #### Related link:
-[Go target](https://github.com/antlr/antlr4/blob/dev/doc/dart-target.md)
+[Go target](https://github.com/antlr/antlr4/blob/dev/doc/go-target.md)
