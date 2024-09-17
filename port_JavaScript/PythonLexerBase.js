@@ -245,7 +245,7 @@ export default class PythonLexerBase extends Lexer {
     }
 
     #handleFStringLexerModes() { // https://peps.python.org/pep-0498/#specification
-        if (this._modeStack.length > 0) {
+        if (this.getModeStack().length > 0) {
             switch (this.curToken.type) {
                 case PythonLexer.LBRACE:
                     this.pushMode(Lexer.DEFAULT_MODE);
@@ -262,7 +262,7 @@ export default class PythonLexerBase extends Lexer {
                     break;
                 case PythonLexer.COLON: // colon can only come from DEFAULT_MODE
                     if (this.paren_or_bracket_openedStack.at(-1) /* peek() */ == 0) {
-                        switch (this._modeStack.at(-1) /* peek() */) { // check the previous lexer mode (the current is DEFAULT_MODE)
+                        switch (this.getModeStack().at(-1) /* peek() */) { // check the previous lexer mode (the current is DEFAULT_MODE)
                             case PythonLexer.SINGLE_QUOTE_FSTRING_MODE:
                             case PythonLexer.LONG_SINGLE_QUOTE_FSTRING_MODE:
                             case PythonLexer.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE:
@@ -277,7 +277,7 @@ export default class PythonLexerBase extends Lexer {
                     }
                     break;
                 case PythonLexer.RBRACE:
-                    switch (this._mode) {
+                    switch (this.getMode()) {
                         case Lexer.DEFAULT_MODE:
                         case PythonLexer.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE:
                         case PythonLexer.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE:
@@ -294,7 +294,7 @@ export default class PythonLexerBase extends Lexer {
     }
 
     #handleFORMAT_SPECIFICATION_MODE() {
-        if (this._modeStack.length > 0 && this.ffgToken.type === PythonLexer.RBRACE) {
+        if (this.getModeStack().length > 0 && this.ffgToken.type === PythonLexer.RBRACE) {
             switch (this.curToken.type) {
                 case PythonLexer.COLON:
                 case PythonLexer.RBRACE:
