@@ -25,7 +25,7 @@ namespace csgrun4py
 
         private static string GetTokenMetaDataWithTokenName(PythonParser parser, IToken token)
         {
-            String tokenText = token.ToString();
+            String tokenText = token.ToString()!;
             String tokenName = token.Type == TokenConstants.EOF ? "EOF" : parser.Vocabulary.GetDisplayName(token.Type);
             String channelText = token.Channel == TokenConstants.DefaultChannel ? "" : "channel=" + token.Channel + ",";
 
