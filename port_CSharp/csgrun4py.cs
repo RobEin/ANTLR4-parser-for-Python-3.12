@@ -1,8 +1,6 @@
 ﻿using Antlr4.Runtime;
 using System;
 
-[assembly: CLSCompliant(false)]
-
 namespace csgrun4py
 {
     static class Program
