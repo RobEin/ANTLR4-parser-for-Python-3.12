@@ -8,6 +8,7 @@ In the meantime, anyone who needs it can modify their local runtime based on [th
 #### Prerequisites:
 - Installed [ANTLR4-tools](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md#getting-started-the-easy-way-using-antlr4-tools)
 - Installed [Dart](https://dart.dev/get-dart)
+- Installed [Python 3](https://www.python.org/downloads/)
 
 #### Command line example:
     first:

@@ -2,7 +2,7 @@
 
 #### Prerequisites:
 - Installed [ANTLR4-tools](https://github.com/antlr/antlr4/blob/master/doc/getting-started.md#getting-started-the-easy-way-using-antlr4-tools)
-- Installed [.NET Framework](https://dotnet.microsoft.com/en-us/download/dotnet-framework)
+- Installed [.NET](https://dotnet.microsoft.com/en-us/download)
  
 
 #### Command line example for Windows:
