@@ -1,4 +1,4 @@
-## Grun For Python
+## Grun (Grammar Unit Test) For Python
 
 While there is a generic grun program for both Java and Python, these Python-specific grun programs differ in the following ways:
 - detects encoding by Python comment
