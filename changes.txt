@@ -1,4 +1,4 @@
-Jan 07, 2025
+Jan. 07, 2025
 ------------
 - parser grammar update for Python 3.13.1
 
@@ -28,7 +28,7 @@ Oct. 18, 2024
 - Fix that case [a, *_] if a == 0: throws error rule soft_kw__not__wildcard failed predicate: {this.isnotEqualToCurrentTokenText("_")}?
 
 
-Szept 05, 2024
+Sept. 05, 2024
 --------------
 - Type comment tokens are no longer generated.
   Type comments will now be tokenized as plain comment tokens.
