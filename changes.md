@@ -13,10 +13,10 @@
     - no need for transformGrammar.py
     - BREAKING CHANGES:
         - dedicated tokens for soft keywords instead of NAME token:
-        - NAME_OR_TYPE
-        - NAME_OR_MATCH
-        - NAME_OR_CASE
-        - NAME_OR_WILDCARD
+          - NAME_OR_TYPE
+          - NAME_OR_MATCH
+          - NAME_OR_CASE
+          - NAME_OR_WILDCARD
 
 # Oct. 18, 2024
 - Fix that `case [a, *_] if a == 0:` throws error rule soft_kw__not__wildcard failed predicate:
