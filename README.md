@@ -2,13 +2,13 @@
 
 ### About files:
  - PythonParser.g4
-   is the ANTLR4 parser grammar that based on the official [Python PEG grammar](https://docs.python.org/3.13/reference/grammar.html)
+   - is the ANTLR4 parser grammar that based on the official [Python PEG grammar](https://docs.python.org/3.13/reference/grammar.html)
 
- - PythonLexerBase
-   handles the Python indentations
-   creates encoding token
-   tokenizes fstring literals
-   and manage many other things
+ - PythonLexerBase class
+    - handles the Python indentations
+    - creates encoding token
+    - tokenizes fstring literals
+    - and manage many other things
 
 - Example files: [Python 3.13.1 Standard Lib](https://github.com/python/cpython/tree/3.13/Lib)
 
@@ -17,7 +17,7 @@
 - added ENCODING token
 - complete rewrite of fstring tokenizer in lexer grammar and PythonLexerBase class
   - now correctly tokenizes the followings in fstring:
-      - escape sequence
+      - escape sequences
       - walrus operator
       - dictionary comprehension
       - set comprehension

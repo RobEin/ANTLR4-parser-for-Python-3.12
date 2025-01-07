@@ -6,13 +6,13 @@ Jan 07, 2025
 
 - complete rewrite of fstring tokenizer in lexer grammar and PythonLexerBase class
     now correctly tokenizes the followings in fstring:
-        escape sequence
+        escape sequences
         walrus operator
         dictionary comprehension
         set comprehension
 
 - soft keywords changes:
-    no embaded code (semantic predicates) in parser grammar for soft keywords
+    no embedded code (semantic predicate) in parser grammar for soft keywords
     no need for PythonParserBase class
     no need for transformGrammar.py
     breaking changes:
