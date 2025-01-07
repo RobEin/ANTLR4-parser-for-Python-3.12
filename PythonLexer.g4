@@ -262,17 +262,17 @@ mode SQ3__FORMAT_SPECIFICATION_MODE; // it is only used after a format specifier
 mode SQ3R_FORMAT_SPECIFICATION_MODE; // it is only used after a format specifier colon
      SQ3R_FORMAT_SPECIFICATION_FSTRING_MIDDLE : SQ3R_FSTRING_PART+ -> type(FSTRING_MIDDLE);
      SQ3R_FORMAT_SPECIFICATION_LBRACE         : '{'                -> type(LBRACE); // will be closed in DEFAULT_MODE by PythonLexerBase class
-     SQ3R_FORMAT_SPECIFICATION_RBRACE         : '}'                -> type(RBRACE); // popMode to SQ3R_FSTRING_MODE by PythonLexerBase class     
+     SQ3R_FORMAT_SPECIFICATION_RBRACE         : '}'                -> type(RBRACE); // popMode to SQ3R_FSTRING_MODE by PythonLexerBase class
 
 mode DQ3__FORMAT_SPECIFICATION_MODE; // it is only used after a format specifier colon
      DQ3__FORMAT_SPECIFICATION_FSTRING_MIDDLE : DQ3__FSTRING_PART+ -> type(FSTRING_MIDDLE);
      DQ3__FORMAT_SPECIFICATION_LBRACE         : '{'                -> type(LBRACE); // will be closed in DEFAULT_MODE by PythonLexerBase class
-     DQ3__FORMAT_SPECIFICATION_RBRACE         : '}'                -> type(RBRACE); // popMode to DQ3__FSTRING_MODE by PythonLexerBase class     
+     DQ3__FORMAT_SPECIFICATION_RBRACE         : '}'                -> type(RBRACE); // popMode to DQ3__FSTRING_MODE by PythonLexerBase class
 
 mode DQ3R_FORMAT_SPECIFICATION_MODE; // it is only used after a format specifier colon
      DQ3R_FORMAT_SPECIFICATION_FSTRING_MIDDLE : DQ3R_FSTRING_PART+ -> type(FSTRING_MIDDLE);
      DQ3R_FORMAT_SPECIFICATION_LBRACE         : '{'                -> type(LBRACE); // will be closed in DEFAULT_MODE by PythonLexerBase class
-     DQ3R_FORMAT_SPECIFICATION_RBRACE         : '}'                -> type(RBRACE); // popMode to DQ3R_FSTRING_MODE by PythonLexerBase class          
+     DQ3R_FORMAT_SPECIFICATION_RBRACE         : '}'                -> type(RBRACE); // popMode to DQ3R_FSTRING_MODE by PythonLexerBase class
 
 /*
  *  fragments
