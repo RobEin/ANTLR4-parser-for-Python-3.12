@@ -31,7 +31,7 @@ Windows:
 antlr4 -Dlanguage=TypeScript PythonLexer.g4
 antlr4 -Dlanguage=TypeScript PythonParser.g4
 npx tsc
-node tsgrun4py.js example.py
+node grun4py.js example.py
 ```
 
 

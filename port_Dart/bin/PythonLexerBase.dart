@@ -88,44 +88,47 @@ abstract class PythonLexerBase extends Lexer {
   }
 
   void checkNextToken() {
-    if (previousPendingTokenType != Token.EOF) {
-      setCurrentAndFollowingTokens();
-      if (indentLengthStack.isEmpty) {
-        // We're at the first token
-        handleStartOfInput();
-      }
+    if (previousPendingTokenType == Token.EOF)
+      return;
 
-      switch (curToken!.type) {
-        case PythonLexer.TOKEN_LPAR:
-        case PythonLexer.TOKEN_LSQB:
-        case PythonLexer.TOKEN_LBRACE:
-          opened++;
-          addPendingToken(curToken!);
-          break;
-        case PythonLexer.TOKEN_RPAR:
-        case PythonLexer.TOKEN_RSQB:
-        case PythonLexer.TOKEN_RBRACE:
-          opened--;
-          addPendingToken(curToken!);
-          break;
-        case PythonLexer.TOKEN_NEWLINE:
-          handleNEWLINEtoken();
-          break;
-        case PythonLexer.TOKEN_FSTRING_MIDDLE:
-          handleFSTRING_MIDDLE_token();
-          break;
-        case PythonLexer.TOKEN_ERRORTOKEN:
-          reportLexerError("token recognition error at: '${curToken!.text}'");
-          addPendingToken(curToken!);
-          break;
-        case Token.EOF:
-          handleEOFtoken();
-          break;
-        default:
-          addPendingToken(curToken!);
-      }
-      handleFORMAT_SPECIFICATION_MODE();
+    if (indentLengthStack.isEmpty) { // We're at the first token
+      insertENCODINGtoken();
+      setCurrentAndFollowingTokens();
+      handleStartOfInput();
+    } else {
+      this.setCurrentAndFollowingTokens();
     }
+
+    switch (curToken!.type) {
+      case PythonLexer.TOKEN_LPAR:
+      case PythonLexer.TOKEN_LSQB:
+      case PythonLexer.TOKEN_LBRACE:
+        opened++;
+        addPendingToken(curToken!);
+        break;
+      case PythonLexer.TOKEN_RPAR:
+      case PythonLexer.TOKEN_RSQB:
+      case PythonLexer.TOKEN_RBRACE:
+        opened--;
+        addPendingToken(curToken!);
+        break;
+      case PythonLexer.TOKEN_NEWLINE:
+        handleNEWLINEtoken();
+        break;
+      case PythonLexer.TOKEN_FSTRING_MIDDLE:
+        handleFSTRING_MIDDLE_token();
+        break;
+      case PythonLexer.TOKEN_ERRORTOKEN:
+        reportLexerError("token recognition error at: '${curToken!.text}'");
+        addPendingToken(curToken!);
+        break;
+      case Token.EOF:
+        handleEOFtoken();
+        break;
+      default:
+        addPendingToken(curToken!);
+    }
+    handleFORMAT_SPECIFICATION_MODE();
   }
 
   void setCurrentAndFollowingTokens() {
@@ -135,6 +138,55 @@ abstract class PythonLexerBase extends Lexer {
 
     ffgToken = curToken!.type == Token.EOF ? curToken : super.nextToken();
   }
+
+  void insertENCODINGtoken() { // https://peps.python.org/pep-0263/
+    final/* ??? */ StringBuffer lineBuilder = StringBuffer();
+    String encodingName = '';
+    int lineCount = 0;
+    final RegExp wsCommentPattern = RegExp(r'^[ \t\f]*(#.*)?$');
+    final CharStream charStream = getInputStream();
+    final int size = charStream.size;
+
+    charStream.seek(0);
+    for (int i = 0; i < size; i++) {
+      final String c = String.fromCharCode(charStream.LA(i + 1));
+      lineBuilder.write(c);
+      if (c == '\n' || i == size - 1) {
+        final String line = lineBuilder.toString().replaceAll('\r', '').replaceAll('\n', '');
+        if (wsCommentPattern.hasMatch(line)) { // WS* + COMMENT? found
+          encodingName = getEncodingName(line);
+          if (encodingName.isNotEmpty) {
+            break; // encoding found
+          }
+        } else {
+          break; // statement or backslash found (line is not empty, not whitespace(s), not comment)
+        }
+
+        lineCount++;
+        if (lineCount >= 2) {
+          break; // check only the first two lines
+        }
+        lineBuilder.clear();
+      }
+    }
+
+    if (encodingName.isEmpty) {
+      encodingName = 'utf-8'; // default Python source code encoding
+    }
+
+    final CommonToken encodingToken = CommonToken(PythonLexer.ENCODING, encodingName);
+    encodingToken.channel = Token.HIDDEN_CHANNEL;
+    addPendingToken(encodingToken);
+  }
+
+  String getEncodingName(String commentText) { // https://peps.python.org/pep-0263/#defining-the-encoding
+    final RegExp encodingCommentPattern =
+        RegExp(r'^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+)');
+    final Match? match = encodingCommentPattern.firstMatch(commentText);
+    return match != null ? match.group(1)! : '';
+  }
+
+
 
   // initialize the indentLengthStack
   // hide the leading NEWLINE token(s)
@@ -373,7 +425,7 @@ abstract class PythonLexerBase extends Lexer {
   }
 
   void addPendingToken(final Token tkn) {
-    // save the last pending token type because the pendingTokens linked list can be empty by the nextToken()
+    // save the last pending token type because the pendingTokens list can be empty by the nextToken()
     previousPendingTokenType = tkn.type;
     if (tkn.channel == Token.DEFAULT_CHANNEL) {
       lastPendingTokenTypeFromDefaultChannel = previousPendingTokenType;

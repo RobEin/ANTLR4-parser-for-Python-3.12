@@ -1,4 +1,4 @@
-name: dartgrun4py
+name: grun4py
 
 environment:
   sdk: ^3.4.4

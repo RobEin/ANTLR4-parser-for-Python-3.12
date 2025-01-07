@@ -16,15 +16,15 @@ def main():
                 continue_codes.append(i)
 
     continue_list = \
-        "fragment ID_CONTINUE:\n" \
-        "    ID_START\n" \
+        "fragment ID_CONTINUE\n" \
+        "    : ID_START\n" \
         "    | " + get_ranged_unicodes(continue_codes) + "\n" \
-        ";"    
+        "    ;"    
 
     start_list = \
-        "fragment ID_START:\n" \
-        "    " + get_ranged_unicodes(start_codes) + "\n" \
-        ";"
+        "fragment ID_START\n" \
+        "    : " + get_ranged_unicodes(start_codes) + "\n" \
+        "    ;"
 
     fragment_ID = continue_list + "\n\n" + start_list
     print(fragment_ID)

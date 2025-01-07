@@ -22,16 +22,20 @@ THE SOFTWARE.
 
  /*
   * Project      : an ANTLR4 parser grammar by the official PEG grammar
-  *                https://github.com/RobEin/ANTLR4-parser-for-Python-3.12
+  *                https://github.com/RobEin/ANTLR4-parser-for-Python-3.13
   * Developed by : Robert Einhorn
   *
   */
 
-parser grammar PythonParser; // Python 3.12.6  https://docs.python.org/3.12/reference/grammar.html#full-grammar-specification
-options {
-    tokenVocab=PythonLexer;
-    superClass=PythonParserBase;
-}
+ /*
+  * Contributors : [Willie Shen](https://github.com/Willie169)
+  */
+
+// Python 3.13.1  https://docs.python.org/3.13/reference/grammar.html#full-grammar-specification
+
+parser grammar PythonParser;
+
+options { tokenVocab=PythonLexer; }
 
 // STARTING RULES
 // ==============
@@ -40,7 +44,6 @@ file_input: statements? EOF;
 interactive: statement_newline;
 eval: expressions NEWLINE* EOF;
 func_type: '(' type_expressions? ')' '->' expression NEWLINE* EOF;
-fstring_input: star_expressions;
 
 // GENERAL STATEMENTS
 // ==================
@@ -92,7 +95,7 @@ compound_stmt
 
 // NOTE: annotated_rhs may start with 'yield'; yield_expr must start with 'yield'
 assignment
-    : NAME ':' expression ('=' annotated_rhs )?
+    : name ':' expression ('=' annotated_rhs )?
     | ('(' single_target ')'
          | single_subscript_attribute_target) ':' expression ('=' annotated_rhs )?
     | (star_targets '=' )+ (yield_expr | star_expressions) TYPE_COMMENT?
@@ -122,9 +125,9 @@ raise_stmt
     : 'raise' (expression ('from' expression )?)?
     ;
 
-global_stmt: 'global' NAME (',' NAME)*;
+global_stmt: 'global' name (',' name)*;
 
-nonlocal_stmt: 'nonlocal' NAME (',' NAME)*;
+nonlocal_stmt: 'nonlocal' name (',' name)*;
 
 del_stmt
     : 'del' del_targets;
@@ -152,14 +155,14 @@ import_from_targets
 import_from_as_names
     : import_from_as_name (',' import_from_as_name)*;
 import_from_as_name
-    : NAME ('as' NAME )?;
+    : name ('as' name )?;
 dotted_as_names
     : dotted_as_name (',' dotted_as_name)*;
 dotted_as_name
-    : dotted_name ('as' NAME )?;
+    : dotted_name ('as' name )?;
 dotted_name
-    : dotted_name '.' NAME
-    | NAME;
+    : dotted_name '.' name
+    | name;
 
 // COMPOUND STATEMENTS
 // ===================
@@ -181,7 +184,7 @@ class_def
     | class_def_raw;
 
 class_def_raw
-    : 'class' NAME type_params? ('(' arguments? ')' )? ':' block;
+    : 'class' name type_params? ('(' arguments? ')' )? ':' block;
 
 // Function definitions
 // --------------------
@@ -191,8 +194,8 @@ function_def
     | function_def_raw;
 
 function_def_raw
-    : 'def' NAME type_params? '(' params? ')' ('->' expression )? ':' func_type_comment? block
-    | ASYNC 'def' NAME type_params? '(' params? ')' ('->' expression )? ':' func_type_comment? block;
+    : 'def' name type_params? '(' params? ')' ('->' expression )? ':' func_type_comment? block
+    | 'async' 'def' name type_params? '(' params? ')' ('->' expression )? ':' func_type_comment? block;
 
 // Function parameters
 // -------------------
@@ -251,8 +254,8 @@ param_with_default
 param_maybe_default
     : param default_assignment? ','? TYPE_COMMENT?
     ;
-param: NAME annotation?;
-param_star_annotation: NAME star_annotation;
+param: name annotation?;
+param_star_annotation: name star_annotation;
 annotation: ':' expression;
 star_annotation: ':' star_expression;
 default_assignment: '=' expression;
@@ -279,16 +282,16 @@ while_stmt
 // -------------
 
 for_stmt
-    : ASYNC? 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?
+    : 'async'? 'for' star_targets 'in' star_expressions ':' TYPE_COMMENT? block else_block?
     ;
 
 // With statement
 // --------------
 
 with_stmt
-    : ASYNC? 'with' ( '(' with_item (',' with_item)* ','? ')' ':'
-                    | with_item (',' with_item)* ':' TYPE_COMMENT?
-                    ) block
+    : 'with' '(' with_item (',' with_item)* ','? ')' ':' TYPE_COMMENT? block
+    | 'async' 'with' '(' with_item (',' with_item)* ','? ')' ':' block
+    | 'async'? 'with' with_item (',' with_item)* ':' TYPE_COMMENT? block
     ;
 
 with_item
@@ -308,10 +311,10 @@ try_stmt
 // ----------------
 
 except_block
-    : 'except' (expression ('as' NAME )?)? ':' block
+    : 'except' (expression ('as' name )?)? ':' block
     ;
 except_star_block
-    : 'except' '*' expression ('as' NAME )? ':' block;
+    : 'except' '*' expression ('as' name )? ':' block;
 finally_block
     : 'finally' ':' block;
 
@@ -319,14 +322,14 @@ finally_block
 // ---------------
 
 match_stmt
-    : soft_kw_match subject_expr ':' NEWLINE INDENT case_block+ DEDENT;
+    : 'match' subject_expr ':' NEWLINE INDENT case_block+ DEDENT;
 
 subject_expr
     : star_named_expression ',' star_named_expressions?
     | named_expression;
 
 case_block
-    : soft_kw_case patterns guard? ':' block;
+    : 'case' patterns guard? ':' block;
 
 guard: 'if' named_expression;
 
@@ -394,19 +397,19 @@ capture_pattern
     : pattern_capture_target;
 
 pattern_capture_target
-    : soft_kw__not__wildcard;
+    : name_except_underscore;
 
 wildcard_pattern
-    : soft_kw_wildcard;
+    : '_';
 
 value_pattern
     : attr;
 
 attr
-    : NAME ('.' NAME)+
+    : name ('.' name)+
     ;
 name_or_attr
-    : NAME ('.' NAME)*
+    : name ('.' name)*
     ;
 
 group_pattern
@@ -427,8 +430,8 @@ maybe_star_pattern
     | pattern;
 
 star_pattern
-    : '*' pattern_capture_target
-    | '*' wildcard_pattern;
+    : '*' name
+    ;
 
 mapping_pattern
     : LBRACE RBRACE
@@ -458,13 +461,13 @@ keyword_patterns
     : keyword_pattern (',' keyword_pattern)*;
 
 keyword_pattern
-    : NAME '=' pattern;
+    : name '=' pattern;
 
 // Type statement
 // ---------------
 
 type_alias
-    : soft_kw_type NAME type_params? '=' expression;
+    : 'type' name type_params? '=' expression;
 
 // Type parameter declaration
 // --------------------------
@@ -474,13 +477,15 @@ type_params: '[' type_param_seq  ']';
 type_param_seq: type_param (',' type_param)* ','?;
 
 type_param
-    : NAME type_param_bound?
-    | '*'  NAME
-    | '**' NAME
+    : name type_param_bound? type_param_default?
+    | '*'  name type_param_starred_default?
+    | '**' name type_param_default?
     ;
 
 
 type_param_bound: ':' expression;
+type_param_default: '=' expression;
+type_param_starred_default: '=' star_expression;
 
 // EXPRESSIONS
 // -----------
@@ -515,7 +520,7 @@ star_named_expression
     | named_expression;
 
 assignment_expression
-    : NAME ':=' expression;
+    : name ':=' expression;
 
 named_expression
     : assignment_expression
@@ -616,11 +621,11 @@ power
 // Primary elements are things like "obj.something.something", "obj[something]", "obj(something)", "obj" ...
 
 await_primary
-    : AWAIT primary
+    : 'await' primary
     | primary;
 
 primary
-    : primary ('.' NAME | genexp | '(' arguments? ')' | '[' slices ']')
+    : primary ('.' name | genexp | '(' arguments? ')' | '[' slices ']')
     | atom
     ;
 
@@ -635,7 +640,7 @@ slice
     | named_expression;
 
 atom
-    : NAME
+    : name
     | 'True'
     | 'False'
     | 'None'
@@ -694,7 +699,7 @@ lambda_param_with_default
 lambda_param_maybe_default
     : lambda_param default_assignment? ','?
     ;
-lambda_param: NAME;
+lambda_param: name;
 
 // LITERALS
 // ========
@@ -703,9 +708,9 @@ fstring_middle
     : fstring_replacement_field
     | FSTRING_MIDDLE;
 fstring_replacement_field
-    : LBRACE (yield_expr | star_expressions) '='? fstring_conversion? fstring_full_format_spec? RBRACE;
+    : LBRACE annotated_rhs '='? fstring_conversion? fstring_full_format_spec? RBRACE;
 fstring_conversion
-    : '!' NAME;
+    : '!' name;
 fstring_full_format_spec
     : ':' fstring_format_spec*;
 fstring_format_spec
@@ -746,7 +751,7 @@ for_if_clauses
     : for_if_clause+;
 
 for_if_clause
-    : ASYNC? 'for' star_targets 'in' disjunction ('if' disjunction )*
+    : 'async'? 'for' star_targets 'in' disjunction ('if' disjunction )*
     ;
 
 listcomp
@@ -780,11 +785,11 @@ starred_expression
     : '*' expression;
 
 kwarg_or_starred
-    : NAME '=' expression
+    : name '=' expression
     | starred_expression;
 
 kwarg_or_double_starred
-    : NAME '=' expression
+    : name '=' expression
     | '**' expression;
 
 // ASSIGNMENT TARGETS
@@ -798,7 +803,7 @@ star_targets
     : star_target (',' star_target )* ','?
     ;
 
-star_targets_list_seq: star_target (',' star_target)+ ','?;
+star_targets_list_seq: star_target (',' star_target)* ','?;
 
 star_targets_tuple_seq
     : star_target (',' | (',' star_target )+ ','?)
@@ -809,27 +814,27 @@ star_target
     | target_with_star_atom;
 
 target_with_star_atom
-    : t_primary ('.' NAME | '[' slices ']')
+    : t_primary ('.' name | '[' slices ']')
     | star_atom
     ;
 
 star_atom
-    : NAME
+    : name
     | '(' target_with_star_atom ')'
     | '(' star_targets_tuple_seq? ')'
     | '[' star_targets_list_seq? ']';
 
 single_target
     : single_subscript_attribute_target
-    | NAME
+    | name
     | '(' single_target ')';
 
 single_subscript_attribute_target
-    : t_primary ('.' NAME | '[' slices ']')
+    : t_primary ('.' name | '[' slices ']')
     ;
 
 t_primary
-    : t_primary ('.' NAME | '[' slices ']' | genexp | '(' arguments? ')')
+    : t_primary ('.' name | '[' slices ']' | genexp | '(' arguments? ')')
     | atom
     ;
 
@@ -843,12 +848,12 @@ t_primary
 del_targets: del_target (',' del_target)* ','?;
 
 del_target
-    : t_primary ('.' NAME | '[' slices ']')
+    : t_primary ('.' name | '[' slices ']')
     | del_t_atom
     ;
 
 del_t_atom
-    : NAME
+    : name
     | '(' del_target ')'
     | '(' del_targets? ')'
     | '[' del_targets? ']';
@@ -870,11 +875,15 @@ func_type_comment
     : NEWLINE TYPE_COMMENT   // Must be followed by indented block
     | TYPE_COMMENT;
 
-// *** Soft Keywords:  https://docs.python.org/3.12/reference/lexical_analysis.html#soft-keywords
-soft_kw_type:           {this.isEqualToCurrentTokenText("type")}?  NAME;
-soft_kw_match:          {this.isEqualToCurrentTokenText("match")}? NAME;
-soft_kw_case:           {this.isEqualToCurrentTokenText("case")}?  NAME;
-soft_kw_wildcard:       {this.isEqualToCurrentTokenText("_")}?     NAME;
-soft_kw__not__wildcard: {this.isnotEqualToCurrentTokenText("_")}?  NAME;
+// *** related to soft keywords: https://docs.python.org/3.13/reference/lexical_analysis.html#soft-keywords
+name_except_underscore
+    : NAME // ***** The NAME token can be used only in this rule *****
+    | NAME_OR_TYPE
+    | NAME_OR_MATCH
+    | NAME_OR_CASE
+    ;
+
+// ***** Always use name rule instead of NAME token in this grammar *****
+name: NAME_OR_WILDCARD | name_except_underscore;
 
 // ========================= END OF THE GRAMMAR ===========================

@@ -55,6 +55,9 @@
 #   Fail if e can be parsed, without consuming any input.
 # ~
 #   Commit to the current alternative, even if it fails to parse.
+# &&e
+#   Eager parse e. The parser will not backtrack and will immediately 
+#   fail with SyntaxError if e cannot be parsed.
 #
 
 # STARTING RULES
@@ -215,7 +218,7 @@ function_def:
 
 function_def_raw:
     | 'def' NAME [type_params] '(' [params] ')' ['->' expression ] ':' [func_type_comment] block 
-    | ASYNC 'def' NAME [type_params] '(' [params] ')' ['->' expression ] ':' [func_type_comment] block 
+    | 'async' 'def' NAME [type_params] '(' [params] ')' ['->' expression ] ':' [func_type_comment] block 
 
 # Function parameters
 # -------------------
@@ -303,16 +306,16 @@ while_stmt:
 
 for_stmt:
     | 'for' star_targets 'in' ~ star_expressions ':' [TYPE_COMMENT] block [else_block] 
-    | ASYNC 'for' star_targets 'in' ~ star_expressions ':' [TYPE_COMMENT] block [else_block] 
+    | 'async' 'for' star_targets 'in' ~ star_expressions ':' [TYPE_COMMENT] block [else_block] 
 
 # With statement
 # --------------
 
 with_stmt:
-    | 'with' '(' ','.with_item+ ','? ')' ':' block 
+    | 'with' '(' ','.with_item+ ','? ')' ':' [TYPE_COMMENT] block 
     | 'with' ','.with_item+ ':' [TYPE_COMMENT] block 
-    | ASYNC 'with' '(' ','.with_item+ ','? ')' ':' block 
-    | ASYNC 'with' ','.with_item+ ':' [TYPE_COMMENT] block 
+    | 'async' 'with' '(' ','.with_item+ ','? ')' ':' block 
+    | 'async' 'with' ','.with_item+ ':' [TYPE_COMMENT] block 
 
 with_item:
     | expression 'as' star_target &(',' | ')' | ':') 
@@ -492,16 +495,20 @@ type_alias:
 # Type parameter declaration
 # --------------------------
 
-type_params: '[' type_param_seq  ']' 
+type_params: 
+    | invalid_type_params
+    | '[' type_param_seq ']' 
 
 type_param_seq: ','.type_param+ [','] 
 
 type_param:
-    | NAME [type_param_bound] 
-    | '*' NAME 
-    | '**' NAME 
+    | NAME [type_param_bound] [type_param_default] 
+    | '*' NAME [type_param_starred_default] 
+    | '**' NAME [type_param_default] 
 
 type_param_bound: ':' expression 
+type_param_default: '=' expression 
+type_param_starred_default: '=' star_expression 
 
 # EXPRESSIONS
 # -----------
@@ -637,7 +644,7 @@ power:
 # Primary elements are things like "obj.something.something", "obj[something]", "obj(something)", "obj" ...
 
 await_primary:
-    | AWAIT primary 
+    | 'await' primary 
     | primary
 
 primary:
@@ -724,7 +731,7 @@ fstring_middle:
     | fstring_replacement_field
     | FSTRING_MIDDLE 
 fstring_replacement_field:
-    | '{' (yield_expr | star_expressions) '='? [fstring_conversion] [fstring_full_format_spec] '}' 
+    | '{' annotated_rhs '='? [fstring_conversion] [fstring_full_format_spec] '}' 
 fstring_conversion:
     | "!" NAME 
 fstring_full_format_spec:
@@ -767,7 +774,7 @@ for_if_clauses:
     | for_if_clause+ 
 
 for_if_clause:
-    | ASYNC 'for' star_targets 'in' ~ disjunction ('if' disjunction )* 
+    | 'async' 'for' star_targets 'in' ~ disjunction ('if' disjunction )* 
     | 'for' star_targets 'in' ~ disjunction ('if' disjunction )* 
 
 listcomp:

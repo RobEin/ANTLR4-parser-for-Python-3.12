@@ -1,5 +1,5 @@
-fragment ID_CONTINUE:
-    ID_START
+fragment ID_CONTINUE
+    : ID_START
     | '\u{0030}' .. '\u{0039}'
     | '\u{00B7}'
     | '\u{0300}' .. '\u{036F}'
@@ -176,6 +176,7 @@ fragment ID_CONTINUE:
     | '\u{1CF4}'
     | '\u{1CF7}' .. '\u{1CF9}'
     | '\u{1DC0}' .. '\u{1DFF}'
+    | '\u{200C}' .. '\u{200D}'
     | '\u{203F}' .. '\u{2040}'
     | '\u{2054}'
     | '\u{20D0}' .. '\u{20DC}'
@@ -186,6 +187,7 @@ fragment ID_CONTINUE:
     | '\u{2DE0}' .. '\u{2DFF}'
     | '\u{302A}' .. '\u{302F}'
     | '\u{3099}' .. '\u{309A}'
+    | '\u{30FB}'
     | '\u{A620}' .. '\u{A629}'
     | '\u{A66F}'
     | '\u{A674}' .. '\u{A67D}'
@@ -230,6 +232,7 @@ fragment ID_CONTINUE:
     | '\u{FE4D}' .. '\u{FE4F}'
     | '\u{FF10}' .. '\u{FF19}'
     | '\u{FF3F}'
+    | '\u{FF65}'
     | '\u{FF9E}' .. '\u{FF9F}'
     | '\u{101FD}'
     | '\u{102E0}'
@@ -374,10 +377,10 @@ fragment ID_CONTINUE:
     | '\u{1E950}' .. '\u{1E959}'
     | '\u{1FBF0}' .. '\u{1FBF9}'
     | '\u{E0100}' .. '\u{E01EF}'
-;
+    ;
 
-fragment ID_START:
-    '\u{0041}' .. '\u{005A}'
+fragment ID_START
+    : '\u{0041}' .. '\u{005A}'
     | '\u{005F}'
     | '\u{0061}' .. '\u{007A}'
     | '\u{00AA}'
@@ -1041,7 +1044,8 @@ fragment ID_START:
     | '\u{2B740}' .. '\u{2B81D}'
     | '\u{2B820}' .. '\u{2CEA1}'
     | '\u{2CEB0}' .. '\u{2EBE0}'
+    | '\u{2EBF0}' .. '\u{2EE5D}'
     | '\u{2F800}' .. '\u{2FA1D}'
     | '\u{30000}' .. '\u{3134A}'
     | '\u{31350}' .. '\u{323AF}'
-;
+    ;

@@ -13,14 +13,12 @@ Unix:
 ```bash
     cp ../*.g4 .
     cp ../example.py .
-    python transformGrammar.py
 ```
 
 Windows:
 ```bash
     copy ..\*.g4
     copy ..\example.py
-    python transformGrammar.py
 ```
 
 ```bash

@@ -25,11 +25,10 @@ THE SOFTWARE.
  * Developed by : Robert Einhorn
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
+#nullable enable
 using Antlr4.Runtime;
+using System.Text;
+using System.Text.RegularExpressions;
 
 public abstract class PythonLexerBase : Lexer
 {
@@ -38,14 +37,22 @@ public abstract class PythonLexerBase : Lexer
     // A list where tokens are waiting to be loaded into the token stream
     private LinkedList<IToken> pendingTokens = new();
 
-    // last pending token types
+    // last pending token type
     private int previousPendingTokenType;
     private int lastPendingTokenTypeFromDefaultChannel;
 
     // The amount of opened parentheses, square brackets, or curly braces
     private int opened;
-    //  The amount of opened parentheses and square brackets in the current lexer mode
+    // The amount of opened parentheses and square brackets in the current lexer mode
     private Stack<int> paren_or_bracket_openedStack = new();
+    // A stack that stores expression(s) between braces in fstring
+    private Stack<string> braceExpressionStack = new();
+    private string prevBraceExpression = "";
+
+    // Instead of this._mode      (_mode is not implemented in each ANTLR4 runtime)
+    private int curLexerMode;
+    // Instead of this._modeStack (_modeStack is not implemented in each ANTLR4 runtime)
+    private Stack<int> lexerModeStack = new();
 
     private bool wasSpaceIndentation;
     private bool wasTabIndentation;
@@ -65,7 +72,7 @@ public abstract class PythonLexerBase : Lexer
     {
     }
 
-    public override IToken NextToken() // reading the input stream until a return EOF
+    public override IToken NextToken() // reading the intStream stream until a return EOF
     {
         this.CheckNextToken();
         IToken firstPendingToken = this.pendingTokens.First!.Value;
@@ -87,6 +94,10 @@ public abstract class PythonLexerBase : Lexer
         this.lastPendingTokenTypeFromDefaultChannel = 0;
         this.opened = 0;
         this.paren_or_bracket_openedStack = new();
+        this.braceExpressionStack = new();
+        this.prevBraceExpression = "";
+        this.curLexerMode = 0;
+        this.lexerModeStack = new();
         this.wasSpaceIndentation = false;
         this.wasTabIndentation = false;
         this.wasIndentationMixedWithSpacesAndTabs = false;
@@ -96,47 +107,57 @@ public abstract class PythonLexerBase : Lexer
 
     private void CheckNextToken()
     {
-        if (this.previousPendingTokenType != TokenConstants.EOF)
+        if (this.previousPendingTokenType == TokenConstants.EOF)
+            return;
+
+        if (this.indentLengthStack.Count == 0) // We're at the first token
+        {
+            this.InsertENCODINGtoken();
+            this.SetCurrentAndFollowingTokens();
+            this.HandleStartOfInput();
+        }
+        else
         {
             this.SetCurrentAndFollowingTokens();
-            if (this.indentLengthStack.Count == 0) // We're at the first token
-            {
-                this.HandleStartOfInput();
-            }
-
-            switch (this.curToken.Type)
-            {
-                case PythonLexer.LPAR:
-                case PythonLexer.LSQB:
-                case PythonLexer.LBRACE:
-                    this.opened++;
-                    this.AddPendingToken(this.curToken);
-                    break;
-                case PythonLexer.RPAR:
-                case PythonLexer.RSQB:
-                case PythonLexer.RBRACE:
-                    this.opened--;
-                    this.AddPendingToken(this.curToken);
-                    break;
-                case PythonLexer.NEWLINE:
-                    this.HandleNEWLINEtoken();
-                    break;
-                case PythonLexer.FSTRING_MIDDLE:
-                    this.HandleFSTRING_MIDDLE_token();
-                    break;
-                case PythonLexer.ERRORTOKEN:
-                    this.ReportLexerError("token recognition error at: '" + this.curToken.Text + "'");
-                    this.AddPendingToken(this.curToken);
-                    break;
-                case TokenConstants.EOF:
-                    this.HandleEOFtoken();
-                    break;
-                default:
-                    this.AddPendingToken(this.curToken);
-                    break;
-            }
-            this.HandleFORMAT_SPECIFICATION_MODE();
         }
+
+
+        switch (this.curToken.Type)
+        {
+            case PythonLexer.NEWLINE:
+                this.HandleNEWLINEtoken();
+                break;
+            case PythonLexer.LPAR:
+            case PythonLexer.LSQB:
+            case PythonLexer.LBRACE:
+                this.opened++;
+                this.AddPendingToken(this.curToken);
+                break;
+            case PythonLexer.RPAR:
+            case PythonLexer.RSQB:
+            case PythonLexer.RBRACE:
+                this.opened--;
+                this.AddPendingToken(this.curToken);
+                break;
+            case PythonLexer.FSTRING_MIDDLE:
+                this.HandleFSTRING_MIDDLEtokenWithDoubleBrace(); // does not affect the opened field
+                this.AddPendingToken(this.curToken);
+                break;
+            case PythonLexer.COLONEQUAL:
+                this.HandleCOLONEQUALtokenInFString();
+                break;
+            case PythonLexer.ERRORTOKEN:
+                this.ReportLexerError("token recognition error at: '" + this.curToken.Text + "'");
+                this.AddPendingToken(this.curToken);
+                break;
+            case TokenConstants.EOF:
+                this.HandleEOFtoken();
+                break;
+            default:
+                this.AddPendingToken(this.curToken);
+                break;
+        }
+        this.HandleFORMAT_SPECIFICATION_MODE();
     }
 
     private void SetCurrentAndFollowingTokens()
@@ -145,11 +166,72 @@ public abstract class PythonLexerBase : Lexer
                         base.NextToken() :
                         this.ffgToken;
 
-        this.HandleFStringLexerModes();
+        this.CheckCurToken(); // ffgToken cannot be used in this method and its sub methods (ffgToken is not yet set)!
 
         this.ffgToken = this.curToken.Type == TokenConstants.EOF ?
                         this.curToken :
                         base.NextToken();
+    }
+
+    private void InsertENCODINGtoken() // https://peps.python.org/pep-0263/
+    {
+        var lineBuilder = new StringBuilder();
+        var encodingName = "";
+        var lineCount = 0;
+        var ws_commentPattern = new Regex("^[ \t\f]*(#.*)?$");
+        var intStream = this.InputStream;
+        var size = intStream.Size;
+
+        intStream.Seek(0);
+        for (int i = 0; i < size; i++)
+        {
+            char c = (char)intStream.LA(i + 1);
+            lineBuilder.Append(c);
+
+            if (c == '\n' || i == size - 1)
+            {
+                string line = lineBuilder.ToString().Replace("\r", "").Replace("\n", "");
+                if (ws_commentPattern.IsMatch(line)) // WS* + COMMENT? found
+                {
+                    encodingName = GetEncodingName(line);
+                    if (encodingName != "")
+                    {
+                        break; // encoding found
+                    }
+                }
+                else
+                {
+                    break; // statement or backslash found (line is not empty, not whitespace(s), not comment)
+                }
+
+                lineCount++;
+                if (lineCount >= 2)
+                {
+                    break; // check only the first two lines
+                }
+                lineBuilder.Clear();
+            }
+        }
+
+        if (encodingName == "")
+        {
+            encodingName = "utf-8"; // default Python source code encoding
+        }
+
+        var encodingToken = new CommonToken(PythonLexer.ENCODING, encodingName);
+        encodingToken.Channel = TokenConstants.HiddenChannel;
+        encodingToken.StartIndex = 0;
+        encodingToken.StopIndex = 0;
+        encodingToken.Line = 0;
+        encodingToken.Column = -1;
+        AddPendingToken(encodingToken);
+    }
+
+    private static string GetEncodingName(string commentText) // https://peps.python.org/pep-0263/#defining-the-encoding
+    {
+        var encodingCommentPattern = new Regex("^[ \\t\\f]*#.*?coding[:=][ \\t]*([-_.a-zA-Z0-9]+)");
+        var match = encodingCommentPattern.Match(commentText);
+        return match.Success ? match.Groups[1].Value : string.Empty;
     }
 
     // initialize the _indentLengths
@@ -187,7 +269,7 @@ public abstract class PythonLexerBase : Lexer
     {
         if (this.previousPendingTokenType == PythonLexer.WS)
         {
-            var prevToken = this.pendingTokens.Last!.Value;
+            IToken prevToken = this.pendingTokens.Last!.Value;
             if (this.GetIndentationLength(prevToken.Text) != 0) // there is an "indentation" before the first statement
             {
                 const string errMsg = "first statement indented";
@@ -200,7 +282,11 @@ public abstract class PythonLexerBase : Lexer
 
     private void HandleNEWLINEtoken()
     {
-        if (this.opened > 0)
+        if (this.lexerModeStack.Count > 0)
+        {
+            this.AddPendingToken(this.curToken);
+        }
+        else if (this.opened > 0)
         {
             // We're in an implicit line joining, ignore the current NEWLINE token
             this.HideAndAddPendingToken(this.curToken);
@@ -227,7 +313,7 @@ public abstract class PythonLexerBase : Lexer
                 default:
                     this.AddPendingToken(nlToken);
                     if (isLookingAhead)
-                    { // We're on whitespace(s) followed by a statement
+                    { // We're on a whitespace(s) followed by a statement
                         int indentationLength = this.ffgToken.Type == TokenConstants.EOF ?
                                                 0 :
                                                 this.GetIndentationLength(this.curToken.Text);
@@ -278,95 +364,336 @@ public abstract class PythonLexerBase : Lexer
         }
     }
 
-    private void HandleFSTRING_MIDDLE_token() // replace the double braces '{{' or '}}' to single braces and hide the second braces
+    private void CheckCurToken()
     {
-        string fsMid = this.curToken.Text;
-        fsMid = fsMid.Replace("{{", "{_").Replace("}}", "}_"); // replace: {{ --> {_  and   }} --> }_
-        Regex regex = new Regex(@"(?<=[{}])_");
-        string[] arrOfStr = regex.Split(fsMid); // split by {_  or  }_
-        foreach (string s in arrOfStr)
+        switch (this.curToken.Type)
         {
-            if (!String.IsNullOrEmpty(s))
-            {
-                this.CreateAndAddPendingToken(PythonLexer.FSTRING_MIDDLE, TokenConstants.DefaultChannel, s, this.ffgToken);
-                string lastCharacter = s.Substring(s.Length - 1);
-                if ("{}".Contains(lastCharacter))
-                {
-                    this.CreateAndAddPendingToken(PythonLexer.FSTRING_MIDDLE, TokenConstants.HiddenChannel, lastCharacter, this.ffgToken);
-                    // this inserted hidden token allows to restore the original f-string literal with the double braces
-                }
+            case PythonLexer.FSTRING_START:
+                this.SetLexerModeByFSTRING_STARTtoken();
+                return;
+            case PythonLexer.FSTRING_MIDDLE:
+                this.HandleFSTRING_MIDDLEtokenWithQuoteAndLBrace(); // affect the opened field
+                if (this.curToken.Type == PythonLexer.FSTRING_MIDDLE)
+                    return; // No curToken exchange happened
+                break;
+            case PythonLexer.FSTRING_END:
+                this.PopLexerMode();
+                return;
+            default:
+                if (this.lexerModeStack.Count == 0)
+                    return; // Not in fstring mode
+                break;
+        }
+
+        switch (this.curToken.Type)
+        {
+            case PythonLexer.NEWLINE:
+                // append the current brace expression with the current newline
+                this.AppendToBraceExpression(this.curToken.Text);
+                var ctkn = new CommonToken(this.curToken);
+                ctkn.Channel = TokenConstants.HiddenChannel;
+                this.curToken = ctkn;
+                break;
+            case PythonLexer.LBRACE:
+                // the outermost brace expression cannot be a dictionary comprehension or a set comprehension
+                this.braceExpressionStack.Push("{");
+                this.paren_or_bracket_openedStack.Push(0);
+                this.PushLexerMode(Lexer.DEFAULT_MODE);
+                break;
+            case PythonLexer.LPAR:
+            case PythonLexer.LSQB:
+                // append the current brace expression with a "(" or a "["
+                this.AppendToBraceExpression(this.curToken.Text);
+                // https://peps.python.org/pep-0498/#lambdas-inside-expressions
+                this.IncrementBraceStack();
+                break;
+            case PythonLexer.RPAR:
+            case PythonLexer.RSQB:
+                // append the current brace expression with a ")" or a "]"
+                this.AppendToBraceExpression(this.curToken.Text);
+                this.DecrementBraceStack();
+                break;
+            case PythonLexer.COLON:
+            case PythonLexer.COLONEQUAL:
+                // append the current brace expression with a ":" or a ":="
+                this.AppendToBraceExpression(this.curToken.Text);
+                this.SetLexerModeByCOLONorCOLONEQUALtoken();
+                break;
+            case PythonLexer.RBRACE:
+                this.SetLexerModeAfterRBRACEtoken();
+                break;
+            default:
+                // append the current brace expression with the current token text
+                this.AppendToBraceExpression(this.curToken.Text);
+                break;
+        }
+    }
+
+    private void AppendToBraceExpression(string text)
+    {
+        this.braceExpressionStack.Push(this.braceExpressionStack.Pop() + text);
+    }
+
+    private void IncrementBraceStack()
+    { // increment the last element (peek() + 1)
+        this.paren_or_bracket_openedStack.Push(this.paren_or_bracket_openedStack.Pop() + 1);
+    }
+
+    private void DecrementBraceStack()
+    { // decrement the last element (peek() - 1)
+        this.paren_or_bracket_openedStack.Push(this.paren_or_bracket_openedStack.Pop() - 1);
+    }
+
+    private void SetLexerModeAfterRBRACEtoken()
+    {
+        switch (this.curLexerMode)
+        {
+            case Lexer.DEFAULT_MODE:
+                this.PopLexerMode();
+                this.PopByBRACE();
+                break;
+            case PythonLexer.SQ1__FORMAT_SPECIFICATION_MODE:
+            case PythonLexer.SQ1R_FORMAT_SPECIFICATION_MODE:
+            case PythonLexer.DQ1__FORMAT_SPECIFICATION_MODE:
+            case PythonLexer.DQ1R_FORMAT_SPECIFICATION_MODE:
+            case PythonLexer.SQ3__FORMAT_SPECIFICATION_MODE:
+            case PythonLexer.SQ3R_FORMAT_SPECIFICATION_MODE:
+            case PythonLexer.DQ3__FORMAT_SPECIFICATION_MODE:
+            case PythonLexer.DQ3R_FORMAT_SPECIFICATION_MODE:
+                this.PopLexerMode();
+                this.PopLexerMode();
+                this.PopByBRACE();
+                break;
+            default:
+                this.ReportLexerError("f-string: single '}' is not allowed");
+                break;
+        }
+    }
+
+    private void SetLexerModeByFSTRING_STARTtoken()
+    {
+        string text = this.curToken.Text.ToLower();
+        var modeMap = new Dictionary<string, int>
+    {
+        { "f'", PythonLexer.SQ1__FSTRING_MODE },
+        { "rf'", PythonLexer.SQ1R_FSTRING_MODE },
+        { "fr'", PythonLexer.SQ1R_FSTRING_MODE },
+        { "f\"", PythonLexer.DQ1__FSTRING_MODE },
+        { "rf\"", PythonLexer.DQ1R_FSTRING_MODE },
+        { "fr\"", PythonLexer.DQ1R_FSTRING_MODE },
+        { "f'''", PythonLexer.SQ3__FSTRING_MODE },
+        { "rf'''", PythonLexer.SQ3R_FSTRING_MODE },
+        { "fr'''", PythonLexer.SQ3R_FSTRING_MODE },
+        { "f\"\"\"", PythonLexer.DQ3__FSTRING_MODE },
+        { "rf\"\"\"", PythonLexer.DQ3R_FSTRING_MODE },
+        { "fr\"\"\"", PythonLexer.DQ3R_FSTRING_MODE }
+    };
+
+        if (modeMap.TryGetValue(text, out int mode))
+        {
+            this.PushLexerMode(mode);
+        }
+    }
+
+    private void SetLexerModeByCOLONorCOLONEQUALtoken()
+    {
+        if (this.paren_or_bracket_openedStack.Peek() == 0)
+        {
+            // COLONEQUAL token will be replaced with a COLON token in CheckNextToken()
+            switch (this.lexerModeStack.Peek())
+            { // check the previous lexer mode (the current is DEFAULT_MODE)
+                case PythonLexer.SQ1__FSTRING_MODE:
+                case PythonLexer.SQ1__FORMAT_SPECIFICATION_MODE:
+                    this.PushLexerMode(PythonLexer.SQ1__FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
+                    break;
+                case PythonLexer.SQ1R_FSTRING_MODE:
+                case PythonLexer.SQ1R_FORMAT_SPECIFICATION_MODE:
+                    this.PushLexerMode(PythonLexer.SQ1R_FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
+                    break;
+                case PythonLexer.DQ1__FSTRING_MODE:
+                case PythonLexer.DQ1__FORMAT_SPECIFICATION_MODE:
+                    this.PushLexerMode(PythonLexer.DQ1__FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
+                    break;
+                case PythonLexer.DQ1R_FSTRING_MODE:
+                case PythonLexer.DQ1R_FORMAT_SPECIFICATION_MODE:
+                    this.PushLexerMode(PythonLexer.DQ1R_FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
+                    break;
+                case PythonLexer.SQ3__FSTRING_MODE:
+                case PythonLexer.SQ3__FORMAT_SPECIFICATION_MODE:
+                    this.PushLexerMode(PythonLexer.SQ3__FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
+                    break;
+                case PythonLexer.SQ3R_FSTRING_MODE:
+                case PythonLexer.SQ3R_FORMAT_SPECIFICATION_MODE:
+                    this.PushLexerMode(PythonLexer.SQ3R_FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
+                    break;
+                case PythonLexer.DQ3__FSTRING_MODE:
+                case PythonLexer.DQ3__FORMAT_SPECIFICATION_MODE:
+                    this.PushLexerMode(PythonLexer.DQ3__FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
+                    break;
+                case PythonLexer.DQ3R_FSTRING_MODE:
+                case PythonLexer.DQ3R_FORMAT_SPECIFICATION_MODE:
+                    this.PushLexerMode(PythonLexer.DQ3R_FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
+                    break;
             }
         }
     }
 
-    private void HandleFStringLexerModes()  // https://peps.python.org/pep-0498/#specification
+    private void PopByBRACE()
     {
-        if (this.ModeStack.Count > 0)
+        this.paren_or_bracket_openedStack.Pop();
+        this.prevBraceExpression = this.braceExpressionStack.Pop() + "}";
+        if (this.braceExpressionStack.Count > 0)
         {
-            switch (this.curToken.Type)
+            // append the current brace expression with the previous brace expression
+            this.braceExpressionStack.Push(this.braceExpressionStack.Pop() + this.prevBraceExpression);
+        }
+
+    }
+
+    private void HandleFSTRING_MIDDLEtokenWithDoubleBrace()
+    {
+        // replace the trailing double brace with a single brace and insert a hidden brace token
+        switch (this.GetLastTwoCharsOfTheCurTokenText())
+        {
+            case "{{":
+                this.TrimLastCharAddPendingTokenSetCurToken(PythonLexer.LBRACE, "{", TokenConstants.HiddenChannel);
+                break;
+            case "}}":
+                this.TrimLastCharAddPendingTokenSetCurToken(PythonLexer.RBRACE, "}", TokenConstants.HiddenChannel);
+                break;
+        }
+    }
+
+    private void HandleFSTRING_MIDDLEtokenWithQuoteAndLBrace()
+    {
+        // replace the trailing     quote + left_brace with a quote     and insert an LBRACE token
+        // replace the trailing backslash + left_brace with a backslash and insert an LBRACE token
+        switch (this.GetLastTwoCharsOfTheCurTokenText())
+        {
+            case "\"{":
+            case "'{":
+            case "\\{":
+                this.TrimLastCharAddPendingTokenSetCurToken(PythonLexer.LBRACE, "{", TokenConstants.DefaultChannel);
+                break;
+        }
+    }
+
+    private string GetLastTwoCharsOfTheCurTokenText()
+    {
+        string curTokenText = this.curToken.Text;
+        return curTokenText.Length >= 2 ? curTokenText.Substring(curTokenText.Length - 2) : curTokenText;
+    }
+
+    private void TrimLastCharAddPendingTokenSetCurToken(int type, string text, int channel)
+    {
+        // trim the last char and add the modified curToken to the pendingTokens stack
+        string curTokenText = this.curToken.Text;
+        string tokenTextWithoutLastChar = curTokenText.Substring(0, curTokenText.Length - 1);
+        var ctkn = new CommonToken(this.curToken);
+        ctkn.Text = tokenTextWithoutLastChar;
+        ctkn.StopIndex = ctkn.StopIndex - 1;
+        this.AddPendingToken(ctkn);
+
+        this.CreateNewCurToken(type, text, channel); // set curToken
+    }
+
+    private void HandleCOLONEQUALtokenInFString()
+    {
+        if (this.lexerModeStack.Count > 0 &&
+            this.paren_or_bracket_openedStack.Peek() == 0)
+        {
+            // In fstring a colonequal (walrus operator) can only be used in parentheses
+            // Not in parentheses, replace COLONEQUAL token with COLON as format specifier
+            // and insert the equal symbol to the following FSTRING_MIDDLE token
+            var ctkn = new CommonToken(this.curToken);
+            ctkn.Type = PythonLexer.COLON;
+            ctkn.Text = ":";
+            ctkn.StopIndex = ctkn.StartIndex;
+            this.curToken = ctkn;
+            if (this.ffgToken.Type == PythonLexer.FSTRING_MIDDLE)
             {
-                case PythonLexer.LBRACE:
-                    this.PushMode(Lexer.DEFAULT_MODE);
-                    this.paren_or_bracket_openedStack.Push(0);
-                    break;
-                case PythonLexer.LPAR:
-                case PythonLexer.LSQB:
-                    // https://peps.python.org/pep-0498/#lambdas-inside-expressions
-                    this.paren_or_bracket_openedStack.Push(this.paren_or_bracket_openedStack.Pop() + 1); // increment the last element
-                    break;
-                case PythonLexer.RPAR:
-                case PythonLexer.RSQB:
-                    this.paren_or_bracket_openedStack.Push(this.paren_or_bracket_openedStack.Pop() - 1); // decrement the last element
-                    break;
-                case PythonLexer.COLON: // colon can only come from DEFAULT_MODE
-                    if (this.paren_or_bracket_openedStack.Peek() == 0)
-                    {
-                        switch (this.ModeStack.Peek()) // check the previous lexer mode (the current is DEFAULT_MODE)
-                        {
-                            case PythonLexer.SINGLE_QUOTE_FSTRING_MODE:
-                            case PythonLexer.LONG_SINGLE_QUOTE_FSTRING_MODE:
-                            case PythonLexer.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE:
-                                this.Mode(PythonLexer.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
-                                break;
-                            case PythonLexer.DOUBLE_QUOTE_FSTRING_MODE:
-                            case PythonLexer.LONG_DOUBLE_QUOTE_FSTRING_MODE:
-                            case PythonLexer.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE:
-                                this.Mode(PythonLexer.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE); // continue in format spec. mode
-                                break;
-                        }
-                    }
-                    break;
-                case PythonLexer.RBRACE:
-                    switch (CurrentMode)
-                    {
-                        case Lexer.DEFAULT_MODE:
-                        case PythonLexer.SINGLE_QUOTE_FORMAT_SPECIFICATION_MODE:
-                        case PythonLexer.DOUBLE_QUOTE_FORMAT_SPECIFICATION_MODE:
-                            this.PopMode();
-                            this.paren_or_bracket_openedStack.Pop();
-                            break;
-                        default:
-                            this.ReportLexerError("f-string: single '}' is not allowed");
-                            break;
-                    }
-                    break;
+                ctkn = new CommonToken(this.ffgToken);
+                ctkn.Text = "=" + ctkn.Text;
+                ctkn.StartIndex -= 1;
+                ctkn.Column -= 1;
+                this.ffgToken = ctkn;
+            }
+            else
+            {
+                this.AddPendingToken(this.curToken);
+                this.CreateNewCurToken(PythonLexer.FSTRING_MIDDLE, "=", TokenConstants.DefaultChannel);
             }
         }
+        this.AddPendingToken(this.curToken);
+    }
+
+    private void CreateNewCurToken(int type, string text, int channel)
+    {
+        var ctkn = new CommonToken(this.curToken);
+        ctkn.Type = type;
+        ctkn.Text = text;
+        ctkn.Channel = channel;
+        ctkn.Column += 1;
+        ctkn.StartIndex += 1;
+        ctkn.StopIndex = ctkn.StartIndex;
+        this.curToken = ctkn;
+    }
+
+    private void PushLexerMode(int mode)
+    {
+        this.PushMode(mode);
+        this.lexerModeStack.Push(this.curLexerMode);
+        this.curLexerMode = mode;
+    }
+
+    private void PopLexerMode()
+    {
+        this.PopMode();
+        this.curLexerMode = this.lexerModeStack.Pop();
     }
 
     private void HandleFORMAT_SPECIFICATION_MODE()
     {
-        if (this.ModeStack.Count > 0 && this.ffgToken.Type == PythonLexer.RBRACE)
+        if (this.lexerModeStack.Count > 0
+         && this.ffgToken.Type == PythonLexer.RBRACE)
         {
+            // insert an empty FSTRING_MIDDLE token instead of the missing format specification
             switch (this.curToken.Type)
             {
                 case PythonLexer.COLON:
-                case PythonLexer.RBRACE:
-                    // insert an empty FSTRING_MIDDLE token instead of the missing format specification
                     this.CreateAndAddPendingToken(PythonLexer.FSTRING_MIDDLE, TokenConstants.DefaultChannel, "", this.ffgToken);
+                    break;
+                case PythonLexer.RBRACE:
+                    // only if the previous brace expression is not a dictionary comprehension or set comprehension
+                    if (!IsDictionaryComprehensionOrSetComprehension(this.prevBraceExpression))
+                    {
+                        this.CreateAndAddPendingToken(PythonLexer.FSTRING_MIDDLE, TokenConstants.DefaultChannel, "", this.ffgToken);
+                    }
                     break;
             }
         }
+    }
+
+    private static bool IsDictionaryComprehensionOrSetComprehension(string code)
+    {
+        var inputStream = CharStreams.fromString(code);
+        var lexer = new PythonLexer(inputStream);
+        var tokenStream = new CommonTokenStream(lexer);
+        var parser = new PythonParser(tokenStream);
+
+        // Disable error listeners to suppress console output
+        lexer.RemoveErrorListeners();
+        parser.RemoveErrorListeners();
+
+        parser.dictcomp(); // Try parsing as dictionary comprehension
+        if (parser.NumberOfSyntaxErrors == 0)
+            return true;
+
+        parser = new PythonParser(tokenStream);
+        tokenStream.Seek(0);
+        parser.RemoveErrorListeners();
+        parser.setcomp(); // Try parsing as set comprehension
+        return parser.NumberOfSyntaxErrors == 0;
     }
 
     private void InsertTrailingTokens()
@@ -387,7 +714,7 @@ public abstract class PythonLexerBase : Lexer
     private void HandleEOFtoken()
     {
         if (this.lastPendingTokenTypeFromDefaultChannel > 0)
-        { // there was a statement in the input (leading NEWLINE tokens are hidden)
+        {  // there was a statement in the intStream (leading NEWLINE tokens are hidden)
             this.InsertTrailingTokens();
         }
         this.AddPendingToken(this.curToken);
@@ -395,28 +722,25 @@ public abstract class PythonLexerBase : Lexer
 
     private void HideAndAddPendingToken(IToken tkn)
     {
-        CommonToken ctkn = new CommonToken(tkn);
+        var ctkn = new CommonToken(tkn);
         ctkn.Channel = TokenConstants.HiddenChannel;
         this.AddPendingToken(ctkn);
     }
 
     private void CreateAndAddPendingToken(int ttype, int channel, string? text, IToken sampleToken)
     {
-        CommonToken ctkn = new CommonToken(sampleToken);
+        var ctkn = new CommonToken(sampleToken);
         ctkn.Type = ttype;
         ctkn.Channel = channel;
         ctkn.StopIndex = sampleToken.StartIndex - 1;
-
-        ctkn.Text = text == null
-                   ? "<" + Vocabulary.GetSymbolicName(ttype) + ">"
-                   : text;
+        ctkn.Text = text ?? "<" + this.Vocabulary.GetSymbolicName(ttype) + ">";
 
         this.AddPendingToken(ctkn);
     }
 
     private void AddPendingToken(IToken tkn)
     {
-        // save the last pending token type because the pendingTokens linked list can be empty by the nextToken()
+        // save the last pending token type because the pendingTokens list can be empty by the nextToken()
         this.previousPendingTokenType = tkn.Type;
         if (tkn.Channel == TokenConstants.DefaultChannel)
         {

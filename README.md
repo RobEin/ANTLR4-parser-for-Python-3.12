@@ -1,13 +1,37 @@
-# ANTLR4 parser for Python 3.12.6 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# ANTLR4 parser for Python 3.13.1 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ### About files:
  - PythonParser.g4
-   is the ANTLR4 parser grammar that based on the official [Python PEG grammar](https://docs.python.org/3.12/reference/grammar.html)
+   is the ANTLR4 parser grammar that based on the official [Python PEG grammar](https://docs.python.org/3.13/reference/grammar.html)
 
  - PythonLexerBase
    handles the Python indentations
+   creates encoding token
+   tokenizes fstring literals
+   and manage many other things
 
-- Example files: [Python 3.12 Standard Lib](https://github.com/python/cpython/tree/3.12/Lib)
+- Example files: [Python 3.13.1 Standard Lib](https://github.com/python/cpython/tree/3.13/Lib)
+
+### Recent changes:
+- parser grammar update for Python 3.13.1
+- added ENCODING token
+- complete rewrite of fstring tokenizer in lexer grammar and PythonLexerBase class
+  - now correctly tokenizes the followings in fstring:
+      - escape sequence
+      - walrus operator
+      - dictionary comprehension
+      - set comprehension
+- soft keywords changes:
+  - no embedded code (semantic predicate) in parser grammar for soft keywords
+  - no need for PythonParserBase class
+  - no need for transformGrammar.py
+  - BREAKING CHANGES:
+    - dedicated tokens for soft keywords (instead of NAME token):
+      - NAME_OR_TYPE
+      - NAME_OR_MATCH
+      - NAME_OR_CASE
+      - NAME_OR_WILDCARD
+
 
 <br/><br/> 
 ### Related links:

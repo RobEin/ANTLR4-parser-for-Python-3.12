@@ -31,6 +31,7 @@ package parser
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -98,33 +99,38 @@ func (p *PythonLexerBase) init() {
 }
 
 func (p *PythonLexerBase) checkNextToken() {
-	if p.previousPendingTokenType != antlr.TokenEOF {
-		p.setCurrentAndFollowingTokens()
-		if len(p.indentLengthStack) == 0 { // We're at the first token
-			p.handleStartOfInput()
-		}
-
-		switch p.curToken.GetTokenType() {
-		case PythonLexerLPAR, PythonLexerLSQB, PythonLexerLBRACE:
-			p.opened++
-			p.addPendingToken(p.curToken)
-		case PythonLexerRPAR, PythonLexerRSQB, PythonLexerRBRACE:
-			p.opened--
-			p.addPendingToken(p.curToken)
-		case PythonLexerNEWLINE:
-			p.handleNEWLINEtoken()
-		case PythonLexerFSTRING_MIDDLE:
-			p.handleFSTRING_MIDDLE_token()
-		case PythonLexerERRORTOKEN:
-			p.reportLexerError(fmt.Sprintf("token recognition error at: '%s'", p.curToken.GetText()))
-			p.addPendingToken(p.curToken)
-		case antlr.TokenEOF:
-			p.handleEOFtoken()
-		default:
-			p.addPendingToken(p.curToken)
-		}
-		p.handleFORMAT_SPECIFICATION_MODE()
+	if p.previousPendingTokenType == antlr.TokenEOF {
+		return
 	}
+
+	if len(p.indentLengthStack) == 0 { // We're at the first token
+		p.insertENCODINGtoken()
+		p.setCurrentAndFollowingTokens()
+		p.handleStartOfInput()
+	} else {
+		p.setCurrentAndFollowingTokens()
+	}
+
+	switch p.curToken.GetTokenType() {
+	case PythonLexerLPAR, PythonLexerLSQB, PythonLexerLBRACE:
+		p.opened++
+		p.addPendingToken(p.curToken)
+	case PythonLexerRPAR, PythonLexerRSQB, PythonLexerRBRACE:
+		p.opened--
+		p.addPendingToken(p.curToken)
+	case PythonLexerNEWLINE:
+		p.handleNEWLINEtoken()
+	case PythonLexerFSTRING_MIDDLE:
+		p.handleFSTRING_MIDDLE_token()
+	case PythonLexerERRORTOKEN:
+		p.reportLexerError(fmt.Sprintf("token recognition error at: '%s'", p.curToken.GetText()))
+		p.addPendingToken(p.curToken)
+	case antlr.TokenEOF:
+		p.handleEOFtoken()
+	default:
+		p.addPendingToken(p.curToken)
+	}
+	p.handleFORMAT_SPECIFICATION_MODE()
 }
 
 func (p *PythonLexerBase) setCurrentAndFollowingTokens() {
@@ -141,6 +147,60 @@ func (p *PythonLexerBase) setCurrentAndFollowingTokens() {
 	} else {
 		p.ffgToken = p.BaseLexer.NextToken()
 	}
+}
+
+func (p *PythonLexerBase) insertENCODINGtoken() { // https://peps.python.org/pep-0263/
+	var lineBuilder strings.Builder
+	var encodingName string
+	var lineCount int
+
+	wsCommentPattern := regexp.MustCompile(`^[ \t\f]*(#.*)?$`)
+	charStream := getInputStream()
+	size := charStream.Size()
+
+	charStream.Seek(0)
+	for i := 0; i < size; i++ {
+		c := rune(charStream.LA(i + 1))
+		lineBuilder.WriteRune(c)
+		if c == '\n' || i == size-1 {
+			line := strings.ReplaceAll(strings.ReplaceAll(lineBuilder.String(), "\r", ""), "\n", "")
+			if wsCommentPattern.MatchString(line) { // WS* + COMMENT? found
+				encodingName = getEncodingName(line)
+				if encodingName != "" {
+					break // encoding found
+				}
+			} else {
+				break // statement or backslash found (line is not empty, not whitespace(s), not comment)
+			}
+
+			lineCount++
+			if lineCount >= 2 {
+				break // check only the first two lines
+			}
+			lineBuilder.Reset()
+		}
+	}
+
+	if encodingName == "" {
+		encodingName = "utf-8" // default Python source code encoding
+	}
+
+	encodingToken := NewCommonToken(PythonLexerEncoding, encodingName)
+	encodingToken.SetChannel(antlr.TokenHiddenChannel)
+	encodingToken.SetStart(0) // ???
+	encodingToken.SetStop(0)  // ???
+	encodingToken.line = 0    // ???
+	encodingToken.column = -1 // ???
+	p.addPendingToken(encodingToken)
+}
+
+func (p *PythonLexerBase) getEncodingName(commentText string) string { // https://peps.python.org/pep-0263/#defining-the-encoding
+	encodingCommentPattern := regexp.MustCompile(`^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+)`)
+	match := encodingCommentPattern.FindStringSubmatch(commentText)
+	if len(match) > 1 {
+		return match[1]
+	}
+	return ""
 }
 
 // initialize the indentLengthStack
@@ -348,7 +408,7 @@ func (p *PythonLexerBase) createAndAddPendingToken(ttype int, channel int, text 
 }
 
 func (p *PythonLexerBase) addPendingToken(token antlr.Token) {
-	// save the last pending token type because the pendingTokens linked list can be empty by the nextToken()
+	// save the last pending token type because the pendingTokens list can be empty by the nextToken()
 	p.previousPendingTokenType = token.GetTokenType()
 	if token.GetChannel() == antlr.TokenDefaultChannel {
 		p.lastPendingTokenTypeFromDefaultChannel = p.previousPendingTokenType
