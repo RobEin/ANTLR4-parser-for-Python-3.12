@@ -1,8 +1,7 @@
 # ANTLR4 parser for Python 3.13.1 &nbsp; [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ### About files:
- - PythonParser.g4
-   - is the ANTLR4 parser grammar that based on the official [Python PEG grammar](https://docs.python.org/3.13/reference/grammar.html)
+ - PythonParser.g4 is the ANTLR4 parser grammar that based on the official [Python PEG grammar](https://docs.python.org/3.13/reference/grammar.html)
 
  - PythonLexerBase class
     - handles the Python indentations
