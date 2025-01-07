@@ -22,7 +22,7 @@
       - dictionary comprehension
       - set comprehension
 - soft keywords changes:
-  - no embedded code (semantic predicate) in parser grammar for soft keywords
+  - no embedded code (semantic predicates) in parser grammar for soft keywords
   - no need for PythonParserBase class
   - no need for transformGrammar.py
   - BREAKING CHANGES:
