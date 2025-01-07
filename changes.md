@@ -1,15 +1,12 @@
 # Jan. 07, 2025
-- parser grammar update for Python 3.13.1  
-  <br/><br/>
-- added ENCODING token  
-  <br/><br/>
+- parser grammar update for Python 3.13.1<br/><br/>
+- added ENCODING token<br/><br/>
 - complete rewrite of fstring tokenizer in lexer grammar and PythonLexerBase class
     - now correctly tokenizes the followings in fstring:
         - escape sequences
         - walrus operator
         - dictionary comprehension
-        - set comprehension  
-          <br/><br/>
+        - set comprehension<br/><br/>
 - soft keywords changes:
     - no embedded code (semantic predicates) in parser grammar for soft keywords
     - no need for PythonParserBase class
