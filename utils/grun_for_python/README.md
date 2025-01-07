@@ -7,7 +7,7 @@ While there is a generic grun program for both Java and Python, these Python-spe
 - display \t \f instead of tab and form feed
 
 Other Python-specific grun:
-- [CSharp](https://github.com/RobEin/ANTLR4-parser-for-Python-3.13/blob/main/port_CSharp/grun4py.cs)
-- [JavaScript](https://github.com/RobEin/ANTLR4-parser-for-Python-3.13/blob/main/port_JavaScript/grun4py.js)
-- [TypeScript](https://github.com/RobEin/ANTLR4-parser-for-Python-3.13/blob/main/port_TypeScript/grun4py.ts)
+- [CSharp](https://github.com/RobEin/tiny-python/blob/master/port_CSharp/grun4py.cs)
+- [JavaScript](https://github.com/RobEin/tiny-python/blob/master/port_JavaScript/grun4py.js)
+- [TypeScript](https://github.com/RobEin/tiny-python/blob/master/port_TypeScript/grun4py.ts)
 
