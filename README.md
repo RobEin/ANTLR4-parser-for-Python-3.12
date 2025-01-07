@@ -32,7 +32,7 @@
       - NAME_OR_CASE
       - NAME_OR_WILDCARD
 
-### [Previous changes](https://github.com/RobEin/ANTLR4-parser-for-Python-3.13/blob/main/changes.txt)
+#### [Previous changes](https://github.com/RobEin/ANTLR4-parser-for-Python-3.13/blob/main/changes.txt)
 
 <br/><br/> 
 ### Related links:
