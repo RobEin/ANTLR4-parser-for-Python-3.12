@@ -26,7 +26,7 @@
   - no need for PythonParserBase class
   - no need for transformGrammar.py
   - **BREAKING CHANGES**:
-    - dedicated tokens for soft keywords (instead of NAME token):
+    - dedicated tokens for soft keywords instead of NAME token:
       - NAME_OR_TYPE
       - NAME_OR_MATCH
       - NAME_OR_CASE
