@@ -308,7 +308,6 @@ class PythonLexerBase(Lexer):
             case Lexer.DEFAULT_MODE:
                 self.__pop_lexer_mode() # only once
                 self.__pop_by_RBRACE()
-
             case self.SQ1__FORMAT_SPECIFICATION_MODE \
                 | self.SQ1R_FORMAT_SPECIFICATION_MODE \
                 | self.DQ1__FORMAT_SPECIFICATION_MODE \
